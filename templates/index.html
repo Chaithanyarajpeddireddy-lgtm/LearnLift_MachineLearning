@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">Data Lab</div>
+        <nav>
+          <a href="#eda">EDA Process</a>
+          <details class="nav-menu" open>
+            <summary>Models</summary>
+            <a href="#linear-regression">Linear Regression</a>
+            <a href="#logistic-regression">Logistic Regression</a>
+          </details>
+          <a href="#preprocessing">Data Preprocessing</a>
+          <a href="#visualization">Visualization</a>
+          <a href="#optimization">Data Optimization</a>
+        </nav>
+      </aside>
+      <main class="content">
+        <header class="hero">
+          <div>
+            <h1>Data Dashboard</h1>
+            <p>Interactive web dashboard for preprocessing, visualization, regression, and optimization.</p>
+          </div>
+          <div class="summary-card">
+            <div><strong>Dataset Shape</strong><span>{{ summary.shape[0] }} rows × {{ summary.shape[1] }} cols</span></div>
+            <div><strong>Missing Values</strong><span>{{ summary.missing_values }}</span></div>
+          </div>
+        </header>
+
+        <section id="eda" class="panel reveal">
+          <div class="section-kicker">Explore before you model</div>
+          <h2>Exploratory Data Analysis</h2>
+          <p>Scan the dataset's shape, quality, and strongest missing-value signals at a glance.</p>
+          <div class="metric-grid">
+            <div class="metric-card"><span>Rows</span><strong>{{ eda.rows }}</strong></div>
+            <div class="metric-card"><span>Columns</span><strong>{{ eda.columns }}</strong></div>
+            <div class="metric-card"><span>Numeric fields</span><strong>{{ eda.numeric_columns }}</strong></div>
+            <div class="metric-card"><span>Duplicate rows</span><strong>{{ eda.duplicate_rows }}</strong></div>
+          </div>
+          <div class="panel-grid compact-grid">
+            <div class="panel-card"><h3>Data quality</h3><p>{{ eda.missing_cells }} missing cells across the loaded sample.</p></div>
+            <div class="panel-card"><h3>Most incomplete fields</h3>
+              {% if eda.top_missing %}<ul>{% for col, count in eda.top_missing %}<li><strong>{{ col }}</strong><span>{{ count }} missing</span></li>{% endfor %}</ul>{% else %}<p>No missing values detected.</p>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section id="preprocessing" class="panel reveal">
+          <h2>Data Preprocessing</h2>
+          <p>Clean, scale, and prepare the dataset for analytics and modeling.</p>
+          <div class="panel-grid">
+            <div class="panel-card">
+              <h3>Columns</h3>
+              <pre>{{ summary.columns | join(', ') }}</pre>
+            </div>
+            <div class="panel-card">
+              <h3>Processed Notes</h3>
+              <ul>
+                {% for note in preprocess_notes %}
+                <li>{{ note }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="visualization" class="panel">
+          <h2>Visualization</h2>
+          <p>Use distribution, scatter, and correlation visuals to explore relationships.</p>
+          <div class="plot-grid">
+            <article class="plot-card">
+              <h3>Histogram</h3>
+              {% if plot_hist %}
+              <img src="data:image/png;base64,{{ plot_hist }}" alt="Histogram" />
+              {% else %}
+              <p>No histogram available.</p>
+              {% endif %}
+            </article>
+            <article class="plot-card">
+              <h3>Scatter plot</h3>
+              {% if plot_scatter %}
+              <img src="data:image/png;base64,{{ plot_scatter }}" alt="Scatter" />
+              {% else %}
+              <p>No scatter plot available.</p>
+              {% endif %}
+            </article>
+            <article class="plot-card full-width">
+              <h3>Correlation heatmap</h3>
+              {% if plot_heatmap %}
+              <img src="data:image/png;base64,{{ plot_heatmap }}" alt="Heatmap" />
+              {% else %}
+              <p>No heatmap available.</p>
+              {% endif %}
+            </article>
+          </div>
+        </section>
+
+        <section id="linear-regression" class="panel">
+          <h2>Linear Regression</h2>
+          <p>Train a simple model using the strongest available numeric feature.</p>
+          <div class="panel-card">
+            <dl>
+              <dt>Status</dt>
+              <dd>{{ lr_report.status }}</dd>
+              {% if lr_report.feature %}
+              <dt>Feature</dt>
+              <dd>{{ lr_report.feature }}</dd>
+              <dt>Target</dt>
+              <dd>{{ lr_report.target }}</dd>
+              <dt>Coefficient</dt>
+              <dd>{{ lr_report.coefficients }}</dd>
+              <dt>Intercept</dt>
+              <dd>{{ lr_report.intercept }}</dd>
+              <dt>Test R²</dt>
+              <dd>{{ lr_report.score }}</dd>
+              {% endif %}
+            </dl>
+          </div>
+          {% if plot_linear %}<div class="model-visual"><img src="data:image/png;base64,{{ plot_linear }}" alt="Linear regression fit visualization" /></div>{% endif %}
+        </section>
+
+        <section id="logistic-regression" class="panel">
+          <h2>Logistic Regression</h2>
+          <p>Classify listings into lower-priced and higher-priced bands from property features.</p>
+          <div class="panel-card">
+            <dl>
+              <dt>Status</dt><dd>{{ logistic_report.status }}</dd>
+              {% if logistic_report.feature %}<dt>Feature</dt><dd>{{ logistic_report.feature }}</dd><dt>Target</dt><dd>{{ logistic_report.target }}</dd><dt>Test accuracy</dt><dd>{{ '%.2f'|format(logistic_report.accuracy * 100) }}%</dd><dt>Classes</dt><dd>{{ logistic_report.classes | join(' / ') }}</dd>{% endif %}
+            </dl>
+          </div>
+          {% if plot_logistic %}<div class="model-visual"><img src="data:image/png;base64,{{ plot_logistic }}" alt="Logistic regression classification visualization" /></div>{% endif %}
+        </section>
+
+        <section id="optimization" class="panel">
+          <h2>Data Optimization</h2>
+          <p>Apply rolling windows and PCA to optimize the feature set.</p>
+          <div class="panel-grid">
+            <div class="panel-card">
+              <h3>Rolling window preview</h3>
+              {% if optimization.rolling_features %}
+              <ul>
+                {% for col, values in optimization.rolling_features.items() %}
+                <li><strong>{{ col }}:</strong> {{ values | join(', ') }}</li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p>{{ optimization.status }}</p>
+              {% endif %}
+            </div>
+            <div class="panel-card">
+              <h3>PCA Explained Variance</h3>
+              {% if optimization.pca_explained_variance %}
+              <p>{{ optimization.pca_explained_variance | join(', ') }}</p>
+              {% else %}
+              <p>{{ optimization.status }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
