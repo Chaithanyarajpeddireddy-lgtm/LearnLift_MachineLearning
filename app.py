@@ -17,6 +17,13 @@ DATA_PATH = "Datasets/archive/spanish_houses.csv"
 
 
 @app.route("/")
+@app.route("/eda")
+@app.route("/models")
+@app.route("/linear-regression")
+@app.route("/logistic-regression")
+@app.route("/preprocessing")
+@app.route("/visualization")
+@app.route("/optimization")
 def index():
     df = load_data(DATA_PATH)
     summary = get_dataset_summary(df)
