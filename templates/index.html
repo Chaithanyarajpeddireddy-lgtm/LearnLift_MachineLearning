@@ -15,7 +15,10 @@
           <details class="nav-menu" open>
             <summary>Models</summary>
             <a href="#linear-regression">Linear Regression</a>
+            <a href="#ridge-regression">Ridge Regression</a>
+            <a href="#lasso-regression">Lasso Regression</a>
             <a href="#logistic-regression">Logistic Regression</a>
+            <a href="#decision-trees">Decision Trees</a>
           </details>
           <a href="#preprocessing">Data Preprocessing</a>
           <a href="#visualization">Visualization</a>
@@ -136,6 +139,30 @@
             </dl>
           </div>
           {% if plot_logistic %}<div class="model-visual"><img src="data:image/png;base64,{{ plot_logistic }}" alt="Logistic regression classification visualization" /></div>{% endif %}
+        </section>
+
+        <section id="ridge-regression" class="panel model-section">
+          <div class="model-heading"><div><span class="section-kicker">Regularization</span><h2>Ridge Regression</h2></div><span class="model-tag">L2 penalty</span></div>
+          <p>Controls large coefficients while preserving all available numeric features.</p>
+          {% set report = regularized_reports.ridge %}
+          <div class="panel-card model-report"><dl><dt>Status</dt><dd>{{ report.status }}</dd>{% if report.feature %}<dt>Feature</dt><dd>{{ report.feature }}</dd><dt>Target</dt><dd>{{ report.target }}</dd><dt>Test R²</dt><dd>{{ '%.3f'|format(report.score) }}</dd>{% endif %}</dl></div>
+        </section>
+
+        <section id="lasso-regression" class="panel model-section">
+          <div class="model-heading"><div><span class="section-kicker">Regularization</span><h2>Lasso Regression</h2></div><span class="model-tag">L1 penalty</span></div>
+          <p>Reduces weak coefficients toward zero for a simpler regression signal.</p>
+          {% set report = regularized_reports.lasso %}
+          <div class="panel-card model-report"><dl><dt>Status</dt><dd>{{ report.status }}</dd>{% if report.feature %}<dt>Feature</dt><dd>{{ report.feature }}</dd><dt>Target</dt><dd>{{ report.target }}</dd><dt>Test R²</dt><dd>{{ '%.3f'|format(report.score) }}</dd>{% endif %}</dl></div>
+        </section>
+
+        <section id="decision-trees" class="panel model-section">
+          <div class="model-heading"><div><span class="section-kicker">Tree methods</span><h2>Decision Trees</h2></div><span class="model-tag">Price bands</span></div>
+          <p>Compare information gain and Gini impurity classification strategies.</p>
+          <div class="tree-grid">
+            {% for key, report in tree_reports.items() %}
+            <article class="panel-card tree-card" id="{{ key }}"><h3>{{ report.name }}</h3><p>{{ 'Information gain split' if key == 'id3' else 'Information gain with best threshold split' if key == 'c45' else 'Gini impurity split' }}</p><dl><dt>Status</dt><dd>{{ report.status }}</dd>{% if report.feature %}<dt>Feature</dt><dd>{{ report.feature }}</dd><dt>Test accuracy</dt><dd>{{ '%.2f'|format(report.accuracy * 100) }}%</dd>{% endif %}</dl></article>
+            {% endfor %}
+          </div>
         </section>
 
         <section id="optimization" class="panel">

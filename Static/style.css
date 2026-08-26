@@ -1,12 +1,13 @@
 :root {
-  --background: #f4f7fb;
+  --background: #f1efe9;
   --surface: #ffffff;
-  --surface-strong: #f8fafc;
-  --text: #0f172a;
-  --muted: #475569;
-  --accent: #2563eb;
-  --accent-soft: #dbeafe;
-  --border: #e2e8f0;
+  --surface-strong: #f7f4ee;
+  --text: #17221f;
+  --muted: #5f6d68;
+  --accent: #d4623b;
+  --accent-soft: #f6d9cb;
+  --teal: #1f5c5b;
+  --border: #ddd9d0;
 }
 
 * {
@@ -15,9 +16,9 @@
 
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Georgia, "Times New Roman", serif;
   color: var(--text);
-  background: var(--background);
+  background: radial-gradient(circle at 90% 0%, #f9dfc9 0, transparent 28rem), var(--background);
 }
 
 .layout {
@@ -27,9 +28,9 @@ body {
 }
 
 .sidebar {
-  background: #111827;
+  background: var(--teal);
   color: #f8fafc;
-  padding: 32px 24px;
+  padding: 34px 24px;
   position: sticky;
   top: 0;
   align-self: start;
@@ -37,15 +38,16 @@ body {
 }
 
 .brand {
-  font-size: 1.75rem;
+  font-size: 1.9rem;
   font-weight: 700;
-  margin-bottom: 32px;
+  margin-bottom: 42px;
+  letter-spacing: 0.02em;
 }
 
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .nav-menu {
@@ -70,7 +72,7 @@ body {
   text-decoration: none;
   font-weight: 500;
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 6px;
   transition: background 0.2s ease;
 }
 
@@ -81,7 +83,8 @@ body {
 }
 
 .content {
-  padding: 32px;
+  padding: 46px clamp(24px, 5vw, 76px);
+  max-width: 1500px;
 }
 
 .hero {
@@ -95,7 +98,9 @@ body {
 
 .hero h1 {
   margin: 0;
-  font-size: clamp(2rem, 2.5vw, 3rem);
+  font-size: clamp(2rem, 3.8vw, 4.4rem);
+  line-height: 0.98;
+  letter-spacing: 0;
 }
 
 .hero p {
@@ -108,7 +113,8 @@ body {
   min-width: 250px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 8px;
+  border-top: 4px solid var(--accent);
   padding: 20px;
   display: grid;
   gap: 18px;
@@ -126,20 +132,20 @@ body {
 }
 
 .panel {
-  margin-bottom: 28px;
+  margin-bottom: 48px;
   scroll-margin-top: 24px;
 }
 
 .reveal { animation: rise-in 0.65s ease both; }
-.section-kicker { color: #e07a5f; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+.section-kicker { color: var(--accent); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
 
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 22px 0 18px; }
-.metric-card { background: #264653; color: #fff; border-radius: 18px; padding: 20px; display: grid; gap: 10px; }
+.metric-card { background: var(--teal); color: #fff; border-radius: 8px; padding: 20px; display: grid; gap: 10px; }
 .metric-card span { color: #bde0d8; font-size: 0.83rem; }
 .metric-card strong { font-size: 2rem; }
 .compact-grid ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .compact-grid li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-.model-visual { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 16px; }
+.model-visual { margin-top: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
 .model-visual img { display: block; width: 100%; max-height: 430px; object-fit: contain; }
 
 @keyframes rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
@@ -164,10 +170,18 @@ body {
 .plot-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 8px;
   padding: 24px;
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.04);
 }
+
+.model-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; }
+.model-heading h2 { margin-bottom: 0; }
+.model-tag { background: var(--accent-soft); color: #823b26; border-radius: 999px; padding: 7px 12px; font: 700 0.75rem/1 Georgia, serif; text-transform: uppercase; letter-spacing: 0.08em; }
+.model-report { max-width: 560px; border-left: 4px solid var(--accent); }
+.tree-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.tree-card { border-top: 4px solid var(--teal); }
+.tree-card p { font-size: 0.95rem; min-height: 2.6em; }
 
 .panel-card h3,
 .plot-card h3 {
@@ -227,6 +241,10 @@ dd {
 
   .content {
     padding: 24px;
+  }
+
+  .tree-grid {
+    grid-template-columns: 1fr;
   }
 
   .panel-grid,

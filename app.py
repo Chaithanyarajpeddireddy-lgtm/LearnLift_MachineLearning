@@ -1,5 +1,8 @@
 from flask import Flask, render_template
+
 from main import (
+    Lasso,
+    Ridge,
     load_data,
     get_dataset_summary,
     preprocess_data,
@@ -7,6 +10,8 @@ from main import (
     generate_eda,
     train_linear_regression,
     train_logistic_regression,
+    train_regularized_regression,
+    train_decision_tree_models,
     generate_model_plots,
     optimize_data,
 )
@@ -31,6 +36,11 @@ def index():
     plots = generate_plots(processed)
     lr_report = train_linear_regression(processed)
     logistic_report = train_logistic_regression(df)
+    regularized_reports = {
+        "ridge": train_regularized_regression(processed, "Ridge regression", Ridge(alpha=1.0)),
+        "lasso": train_regularized_regression(processed, "Lasso regression", Lasso(alpha=0.1, max_iter=10000)),
+    }
+    tree_reports = train_decision_tree_models(df)
     model_plots = generate_model_plots(df, lr_report, logistic_report)
     eda = generate_eda(df)
     optimization = optimize_data(processed)
@@ -41,6 +51,8 @@ def index():
         preprocess_notes=preprocess_notes,
         lr_report=lr_report,
         logistic_report=logistic_report,
+        regularized_reports=regularized_reports,
+        tree_reports=tree_reports,
         eda=eda,
         optimization=optimization,
         plot_hist=plots.get("histogram"),

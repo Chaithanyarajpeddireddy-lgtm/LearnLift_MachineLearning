@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
@@ -242,6 +243,103 @@ def train_linear_regression(df):
         }
     )
     return result
+
+
+def _regression_data(df):
+    numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
+    if len(numeric.columns) < 2:
+        return None
+
+    correlations = numeric.corr().abs()
+    target = correlations.sum().sort_values(ascending=False).index[1]
+    feature = next((column for column in numeric.columns if column != target), None)
+    if feature is None:
+        return None
+
+    data = numeric[[feature, target]].dropna()
+    if len(data) < 20:
+        return None
+    return data, feature, target
+
+
+def train_regularized_regression(df, model_name, estimator):
+    result = {
+        "name": model_name,
+        "type": "Regression",
+        "status": "Unable to train regression. Not enough numeric data.",
+        "score": None,
+        "feature": None,
+        "target": None,
+    }
+    training_data = _regression_data(df)
+    if training_data is None:
+        return result
+
+    data, feature, target = training_data
+    X_train, X_test, y_train, y_test = train_test_split(
+        data[[feature]], data[target], test_size=0.2, random_state=42
+    )
+    estimator.fit(X_train, y_train)
+    result.update(
+        {
+            "status": f"{model_name} trained successfully.",
+            "score": float(estimator.score(X_test, y_test)),
+            "feature": feature,
+            "target": target,
+        }
+    )
+    return result
+
+
+def _classification_data(df):
+    numeric = df.select_dtypes(include=["number"]).copy()
+    if "price" not in numeric and "price" in df.columns:
+        numeric["price"] = pd.to_numeric(df["price"], errors="coerce")
+    if "price" not in numeric or len(numeric.columns) < 2:
+        return None
+
+    numeric = numeric.dropna(subset=["price"])
+    if len(numeric) < 20 or numeric["price"].nunique() < 2:
+        return None
+    target = (numeric["price"] >= numeric["price"].median()).astype(int)
+    feature = next((column for column in ["m2_real", "m2_useful", "ground_size"] if column in numeric), None)
+    feature = feature or next(column for column in numeric.columns if column != "price")
+    data = numeric[[feature]].fillna(numeric[feature].median())
+    return data, target, feature
+
+
+def train_decision_tree_models(df):
+    specifications = {
+        "id3": ("ID3", DecisionTreeClassifier(criterion="entropy", random_state=42)),
+        "c45": ("C4.5", DecisionTreeClassifier(criterion="entropy", splitter="best", random_state=42)),
+        "cart": ("CART", DecisionTreeClassifier(criterion="gini", random_state=42)),
+    }
+    reports = {}
+    classification_data = _classification_data(df)
+    for key, (model_name, estimator) in specifications.items():
+        report = {
+            "name": model_name,
+            "type": "Decision tree classification",
+            "status": "Unable to train classification. Not enough numeric data.",
+            "accuracy": None,
+            "feature": None,
+            "target": "price_band",
+        }
+        if classification_data is not None:
+            features, target, feature = classification_data
+            X_train, X_test, y_train, y_test = train_test_split(
+                features, target, test_size=0.2, random_state=42, stratify=target
+            )
+            estimator.fit(X_train, y_train)
+            report.update(
+                {
+                    "status": f"{model_name} trained successfully.",
+                    "accuracy": float(estimator.score(X_test, y_test)),
+                    "feature": feature,
+                }
+            )
+        reports[key] = report
+    return reports
 
 
 def optimize_data(df):
