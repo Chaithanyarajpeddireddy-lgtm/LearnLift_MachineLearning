@@ -1,190 +1,458 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Data Dashboard</title>
+    <title>LearnLift | Machine Learning & Real Estate Intelligence</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   </head>
   <body>
     <div class="layout">
+      <!-- Sidebar Navigation -->
       <aside class="sidebar">
-        <div class="brand">Data Lab</div>
+        <div class="brand">
+          <span class="brand-icon">⚡</span>
+          <div>
+            <div class="brand-name">LearnLift</div>
+            <div class="brand-sub">ML Intelligence Lab</div>
+          </div>
+        </div>
+
         <nav>
-          <a href="#eda">EDA Process</a>
-          <details class="nav-menu" open>
-            <summary>Models</summary>
-            <a href="#linear-regression">Linear Regression</a>
-            <a href="#ridge-regression">Ridge Regression</a>
-            <a href="#lasso-regression">Lasso Regression</a>
-            <a href="#logistic-regression">Logistic Regression</a>
-            <a href="#decision-trees">Decision Trees</a>
-          </details>
-          <a href="#preprocessing">Data Preprocessing</a>
-          <a href="#visualization">Visualization</a>
-          <a href="#optimization">Data Optimization</a>
+          <a href="#predictor" class="nav-item active"><span class="icon">🔮</span> Live Predictor</a>
+          <a href="#eda" class="nav-item"><span class="icon">📊</span> Market EDA</a>
+          <a href="#visualization" class="nav-item"><span class="icon">📈</span> Visualizations</a>
+          
+          <div class="nav-heading">Machine Learning</div>
+          <a href="#regression" class="nav-item"><span class="icon">📉</span> Regression (Price)</a>
+          <a href="#classification" class="nav-item"><span class="icon">🏷️</span> Classification (Tier)</a>
+          <a href="#decision-trees" class="nav-item"><span class="icon">🌲</span> Decision Trees</a>
+          <a href="#optimization" class="nav-item"><span class="icon">⚙️</span> PCA & Optimization</a>
         </nav>
+
+        <div class="sidebar-footer">
+          <div class="theme-toggle-wrapper">
+            <span>Theme</span>
+            <button id="themeToggle" class="theme-btn" title="Toggle Dark/Light Mode">🌙 Dark</button>
+          </div>
+        </div>
       </aside>
+
+      <!-- Main Dashboard Content -->
       <main class="content">
+        <!-- Top Navigation / Region Selector Bar -->
         <header class="hero">
           <div>
-            <h1>Data Dashboard</h1>
-            <p>Interactive web dashboard for preprocessing, visualization, regression, and optimization.</p>
+            <div class="badge-tag">Machine Learning Platform</div>
+            <h1>Real Estate Intelligence Dashboard</h1>
+            <p>Multivariable regression, classification, exploratory analytics, and instant price inference.</p>
           </div>
-          <div class="summary-card">
-            <div><strong>Dataset Shape</strong><span>{{ summary.shape[0] }} rows × {{ summary.shape[1] }} cols</span></div>
-            <div><strong>Missing Values</strong><span>{{ summary.missing_values }}</span></div>
+
+          <div class="region-selector-card">
+            <label for="regionSelect"><strong>Active Market / Region:</strong></label>
+            <select id="regionSelect" class="select-input" onchange="switchRegion(this.value)">
+              {% for reg in available_regions %}
+              <option value="{{ reg.id }}" {% if reg.id == selected_region %}selected{% endif %}>
+                {{ reg.name }}
+              </option>
+              {% endfor %}
+            </select>
           </div>
         </header>
 
-        <section id="eda" class="panel reveal">
-          <div class="section-kicker">Explore before you model</div>
-          <h2>Exploratory Data Analysis</h2>
-          <p>Scan the dataset's shape, quality, and strongest missing-value signals at a glance.</p>
-          <div class="metric-grid">
-            <div class="metric-card"><span>Rows</span><strong>{{ eda.rows }}</strong></div>
-            <div class="metric-card"><span>Columns</span><strong>{{ eda.columns }}</strong></div>
-            <div class="metric-card"><span>Numeric fields</span><strong>{{ eda.numeric_columns }}</strong></div>
-            <div class="metric-card"><span>Duplicate rows</span><strong>{{ eda.duplicate_rows }}</strong></div>
-          </div>
-          <div class="panel-grid compact-grid">
-            <div class="panel-card"><h3>Data quality</h3><p>{{ eda.missing_cells }} missing cells across the loaded sample.</p></div>
-            <div class="panel-card"><h3>Most incomplete fields</h3>
-              {% if eda.top_missing %}<ul>{% for col, count in eda.top_missing %}<li><strong>{{ col }}</strong><span>{{ count }} missing</span></li>{% endfor %}</ul>{% else %}<p>No missing values detected.</p>{% endif %}
+        <!-- 1. Interactive Live House Price Predictor -->
+        <section id="predictor" class="panel reveal">
+          <div class="section-kicker">Interactive Inference Engine</div>
+          <h2>Live Property Price & Tier Predictor</h2>
+          <p>Input real estate specifications to get instant valuation and tier classification via trained multivariable models.</p>
+
+          <div class="predictor-grid">
+            <!-- Prediction Form -->
+            <form id="predictionForm" class="predictor-form panel-card">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="m2_real">Living Area (m²)</label>
+                  <input type="number" id="m2_real" name="m2_real" value="110" min="15" max="1000" required />
+                </div>
+                <div class="form-group">
+                  <label for="room_num">Bedrooms</label>
+                  <input type="number" id="room_num" name="room_num" value="3" min="1" max="15" required />
+                </div>
+                <div class="form-group">
+                  <label for="bath_num">Bathrooms</label>
+                  <input type="number" id="bath_num" name="bath_num" value="2" min="1" max="10" required />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="house_type">Property Type</label>
+                  <select id="house_type" name="house_type">
+                    <option value="Piso">Piso (Apartment)</option>
+                    <option value="Casa o chalet independiente">Casa o chalet (Detached Villa)</option>
+                    <option value="Ático">Ático (Penthouse)</option>
+                    <option value="Chalet adosado">Chalet adosado (Townhouse)</option>
+                    <option value="Duplex">Duplex</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="condition">Condition</label>
+                  <select id="condition" name="condition">
+                    <option value="segunda mano/buen estado">Good Condition (Second Hand)</option>
+                    <option value="promoción de obra nueva">New Construction</option>
+                    <option value="segunda mano/para reformar">Needs Renovation</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Amenities & Features</label>
+                <div class="checkbox-grid">
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="swimming_pool" name="swimming_pool" value="1" />
+                    <span>🏊 Swimming Pool</span>
+                  </label>
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="garden" name="garden" value="1" />
+                    <span>🌳 Garden</span>
+                  </label>
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="terrace" name="terrace" value="1" checked />
+                    <span>☀️ Terrace</span>
+                  </label>
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="lift" name="lift" value="1" checked />
+                    <span>🛗 Elevator / Lift</span>
+                  </label>
+                  <label class="custom-checkbox">
+                    <input type="checkbox" id="air_conditioner" name="air_conditioner" value="1" />
+                    <span>❄️ Air Conditioning</span>
+                  </label>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" id="predictBtn">
+                ⚡ Calculate Live Prediction
+              </button>
+            </form>
+
+            <!-- Result Card -->
+            <div class="predictor-result panel-card" id="resultCard">
+              <div class="result-header">Estimated Valuation</div>
+              <div class="price-display" id="predPrice">€---,---</div>
+              
+              <div class="tier-badge" id="predTier">Awaiting calculation...</div>
+
+              <div class="prediction-details">
+                <div class="detail-row">
+                  <span>Inference Engine:</span>
+                  <strong>Multivariate Ridge + Logistic</strong>
+                </div>
+                <div class="detail-row">
+                  <span>Confidence Level:</span>
+                  <strong id="predConfidence">--%</strong>
+                </div>
+                <div class="detail-row">
+                  <span>Active Market:</span>
+                  <strong>{{ selected_region.replace('houses_', '').replace('.csv', '').title() }}</strong>
+                </div>
+              </div>
+
+              <div class="live-indicator">
+                <span class="pulse-dot"></span> Live Model Ready
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="preprocessing" class="panel reveal">
-          <h2>Data Preprocessing</h2>
-          <p>Clean, scale, and prepare the dataset for analytics and modeling.</p>
+        <!-- 2. Exploratory Data Analysis (EDA) -->
+        <section id="eda" class="panel reveal">
+          <div class="section-kicker">Exploratory Data Analysis</div>
+          <h2>Dataset Overview & Quality Metrics</h2>
+          <p>Key statistics, completeness signals, and pricing dynamics of the loaded sample.</p>
+
+          <div class="metric-grid">
+            <div class="metric-card">
+              <span>Sample Rows</span>
+              <strong>{{ '{:,}'.format(eda.rows) }}</strong>
+            </div>
+            <div class="metric-card">
+              <span>Features (Columns)</span>
+              <strong>{{ eda.columns }}</strong>
+            </div>
+            <div class="metric-card">
+              <span>Median Price</span>
+              <strong>€{{ '{:,.0f}'.format(eda.price_median) }}</strong>
+            </div>
+            <div class="metric-card">
+              <span>Data Completeness</span>
+              <strong>{{ 100 - eda.missing_percentage }}%</strong>
+            </div>
+          </div>
+
           <div class="panel-grid">
             <div class="panel-card">
-              <h3>Columns</h3>
-              <pre>{{ summary.columns | join(', ') }}</pre>
+              <h3>Pricing Summary</h3>
+              <dl class="stat-list">
+                <div><dt>Average Price</dt><dd>€{{ '{:,.0f}'.format(eda.price_mean) }}</dd></div>
+                <div><dt>Median Price</dt><dd>€{{ '{:,.0f}'.format(eda.price_median) }}</dd></div>
+                <div><dt>Minimum Price</dt><dd>€{{ '{:,.0f}'.format(eda.price_min) }}</dd></div>
+                <div><dt>Maximum Price</dt><dd>€{{ '{:,.0f}'.format(eda.price_max) }}</dd></div>
+              </dl>
             </div>
+
             <div class="panel-card">
-              <h3>Processed Notes</h3>
-              <ul>
-                {% for note in preprocess_notes %}
-                <li>{{ note }}</li>
+              <h3>Incomplete Fields & Missing Rates</h3>
+              {% if eda.top_missing %}
+              <div class="missing-list">
+                {% for col, count, pct in eda.top_missing %}
+                <div class="missing-item">
+                  <div class="missing-label">
+                    <strong>{{ col }}</strong>
+                    <span>{{ count }} missing ({{ pct }}%)</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ pct }}%"></div>
+                  </div>
+                </div>
                 {% endfor %}
-              </ul>
+              </div>
+              {% else %}
+              <p>Clean sample: No missing values detected.</p>
+              {% endif %}
             </div>
           </div>
         </section>
 
+        <!-- 3. Visualization Gallery -->
         <section id="visualization" class="panel">
-          <h2>Visualization</h2>
-          <p>Use distribution, scatter, and correlation visuals to explore relationships.</p>
+          <div class="section-kicker">Visual Analytics</div>
+          <h2>Data Distributions & Correlations</h2>
+          <p>Statistical distribution of listings, size relationships, and multi-variable correlations.</p>
+
           <div class="plot-grid">
             <article class="plot-card">
-              <h3>Histogram</h3>
-              {% if plot_hist %}
-              <img src="data:image/png;base64,{{ plot_hist }}" alt="Histogram" />
+              <h3>Price Distribution</h3>
+              {% if plots.histogram %}
+              <img src="data:image/png;base64,{{ plots.histogram }}" alt="Price Distribution" />
               {% else %}
-              <p>No histogram available.</p>
+              <p class="empty-state">Histogram unavailable.</p>
               {% endif %}
             </article>
+
             <article class="plot-card">
-              <h3>Scatter plot</h3>
-              {% if plot_scatter %}
-              <img src="data:image/png;base64,{{ plot_scatter }}" alt="Scatter" />
+              <h3>Living Area vs. Price</h3>
+              {% if plots.scatter %}
+              <img src="data:image/png;base64,{{ plots.scatter }}" alt="Living Area vs Price" />
               {% else %}
-              <p>No scatter plot available.</p>
+              <p class="empty-state">Scatter plot unavailable.</p>
               {% endif %}
             </article>
+
             <article class="plot-card full-width">
-              <h3>Correlation heatmap</h3>
-              {% if plot_heatmap %}
-              <img src="data:image/png;base64,{{ plot_heatmap }}" alt="Heatmap" />
+              <h3>Multi-Feature Correlation Heatmap</h3>
+              {% if plots.heatmap %}
+              <img src="data:image/png;base64,{{ plots.heatmap }}" alt="Correlation Heatmap" />
               {% else %}
-              <p>No heatmap available.</p>
+              <p class="empty-state">Correlation matrix unavailable.</p>
               {% endif %}
             </article>
           </div>
         </section>
 
-        <section id="linear-regression" class="panel">
-          <h2>Linear Regression</h2>
-          <p>Train a simple model using the strongest available numeric feature.</p>
-          <div class="panel-card">
-            <dl>
-              <dt>Status</dt>
-              <dd>{{ lr_report.status }}</dd>
-              {% if lr_report.feature %}
-              <dt>Feature</dt>
-              <dd>{{ lr_report.feature }}</dd>
-              <dt>Target</dt>
-              <dd>{{ lr_report.target }}</dd>
-              <dt>Coefficient</dt>
-              <dd>{{ lr_report.coefficients }}</dd>
-              <dt>Intercept</dt>
-              <dd>{{ lr_report.intercept }}</dd>
-              <dt>Test R²</dt>
-              <dd>{{ lr_report.score }}</dd>
+        <!-- 4. Multivariate Regression Models -->
+        <section id="regression" class="panel">
+          <div class="section-kicker">Supervised Learning</div>
+          <h2>Multivariable Regression Models</h2>
+          <p>Comparison of Linear, Ridge (L2 penalty), and Lasso (L1 penalty) estimators using cross-validated train/test splits.</p>
+
+          <div class="table-card panel-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Model Algorithm</th>
+                  <th>Test R² Score</th>
+                  <th>MAE (€)</th>
+                  <th>RMSE (€)</th>
+                  <th>Train / Test Samples</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key, reg in reg_results.items() %}
+                <tr>
+                  <td><strong>{{ reg.name }}</strong></td>
+                  <td><span class="badge score-badge">{{ reg.r2 }}</span></td>
+                  <td>€{{ '{:,.0f}'.format(reg.mae) }}</td>
+                  <td>€{{ '{:,.0f}'.format(reg.rmse) }}</td>
+                  <td>{{ reg.train_samples }} / {{ reg.test_samples }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Feature Importance / Coefficient Rankings -->
+          {% if reg_results.ridge and reg_results.ridge.top_features %}
+          <div class="panel-card" style="margin-top: 20px;">
+            <h3>Top Price Drivers (Ridge Coefficients)</h3>
+            <p>Features with the strongest positive or negative impact on property valuations:</p>
+            <div class="feature-importance-grid">
+              {% for feat in reg_results.ridge.top_features %}
+              <div class="feature-card">
+                <span class="feature-name">{{ feat.feature }}</span>
+                <span class="feature-val {% if feat.impact >= 0 %}positive{% else %}negative{% endif %}">
+                  {% if feat.impact >= 0 %}+{% endif %}€{{ '{:,.0f}'.format(feat.impact) }}
+                </span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </section>
+
+        <!-- 5. Classification & Market Tiering -->
+        <section id="classification" class="panel">
+          <div class="section-kicker">Classification & Price Bands</div>
+          <h2>Market Tier Classification</h2>
+          <p>Classifying properties into <strong>Affordable / Standard</strong> vs. <strong>Premium / Luxury</strong> tiers using property specifications.</p>
+
+          <div class="table-card panel-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Classifier</th>
+                  <th>Accuracy</th>
+                  <th>Precision</th>
+                  <th>Recall</th>
+                  <th>F1-Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key, clf in clf_results.items() %}
+                <tr>
+                  <td><strong>{{ clf.name }}</strong></td>
+                  <td><span class="badge accuracy-badge">{{ clf.accuracy }}%</span></td>
+                  <td>{{ clf.precision }}%</td>
+                  <td>{{ clf.recall }}%</td>
+                  <td><strong>{{ clf.f1 }}%</strong></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Confusion Matrix Cards -->
+          {% if clf_results.logistic and clf_results.logistic.confusion_matrix %}
+          <div class="panel-grid" style="margin-top: 20px;">
+            <div class="panel-card">
+              <h3>Logistic Regression Confusion Matrix</h3>
+              {% set cm = clf_results.logistic.confusion_matrix %}
+              <div class="cm-grid">
+                <div class="cm-cell correct">
+                  <span>True Negative (Standard)</span>
+                  <strong>{{ cm.tn }}</strong>
+                </div>
+                <div class="cm-cell error">
+                  <span>False Positive</span>
+                  <strong>{{ cm.fp }}</strong>
+                </div>
+                <div class="cm-cell error">
+                  <span>False Negative</span>
+                  <strong>{{ cm.fn }}</strong>
+                </div>
+                <div class="cm-cell correct">
+                  <span>True Positive (Luxury)</span>
+                  <strong>{{ cm.tp }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <h3>Classification Boundary</h3>
+              <p>Binary target threshold set at market median price:</p>
+              <div class="metric-box">
+                <span>Threshold:</span>
+                <strong>€{{ '{:,.0f}'.format(clf_results.logistic.median_threshold) }}</strong>
+              </div>
+              <p style="margin-top: 12px; font-size: 0.88rem; color: var(--muted);">
+                Listings at or above this threshold are classified into the Premium/Luxury tier.
+              </p>
+            </div>
+          </div>
+          {% endif %}
+        </section>
+
+        <!-- 6. Decision Trees -->
+        <section id="decision-trees" class="panel">
+          <div class="section-kicker">Tree Methods</div>
+          <h2>Decision Tree Decision Rules</h2>
+          <p>Inspecting how tree algorithms (Gini Impurity vs. Entropy Information Gain) partition real estate features.</p>
+
+          <div class="panel-grid">
+            {% for key in ['dt_gini', 'dt_entropy'] %}
+            {% if clf_results[key] %}
+            <div class="panel-card">
+              <h3>{{ clf_results[key].name }}</h3>
+              <p>Accuracy: <strong>{{ clf_results[key].accuracy }}%</strong> | F1-Score: <strong>{{ clf_results[key].f1 }}%</strong></p>
+              {% if clf_results[key].tree_rules %}
+              <pre class="tree-code">{{ clf_results[key].tree_rules }}</pre>
+              {% else %}
+              <p class="empty-state">Tree structure preview unavailable.</p>
               {% endif %}
-            </dl>
-          </div>
-          {% if plot_linear %}<div class="model-visual"><img src="data:image/png;base64,{{ plot_linear }}" alt="Linear regression fit visualization" /></div>{% endif %}
-        </section>
-
-        <section id="logistic-regression" class="panel">
-          <h2>Logistic Regression</h2>
-          <p>Classify listings into lower-priced and higher-priced bands from property features.</p>
-          <div class="panel-card">
-            <dl>
-              <dt>Status</dt><dd>{{ logistic_report.status }}</dd>
-              {% if logistic_report.feature %}<dt>Feature</dt><dd>{{ logistic_report.feature }}</dd><dt>Target</dt><dd>{{ logistic_report.target }}</dd><dt>Test accuracy</dt><dd>{{ '%.2f'|format(logistic_report.accuracy * 100) }}%</dd><dt>Classes</dt><dd>{{ logistic_report.classes | join(' / ') }}</dd>{% endif %}
-            </dl>
-          </div>
-          {% if plot_logistic %}<div class="model-visual"><img src="data:image/png;base64,{{ plot_logistic }}" alt="Logistic regression classification visualization" /></div>{% endif %}
-        </section>
-
-        <section id="ridge-regression" class="panel model-section">
-          <div class="model-heading"><div><span class="section-kicker">Regularization</span><h2>Ridge Regression</h2></div><span class="model-tag">L2 penalty</span></div>
-          <p>Controls large coefficients while preserving all available numeric features.</p>
-          {% set report = regularized_reports.ridge %}
-          <div class="panel-card model-report"><dl><dt>Status</dt><dd>{{ report.status }}</dd>{% if report.feature %}<dt>Feature</dt><dd>{{ report.feature }}</dd><dt>Target</dt><dd>{{ report.target }}</dd><dt>Test R²</dt><dd>{{ '%.3f'|format(report.score) }}</dd>{% endif %}</dl></div>
-        </section>
-
-        <section id="lasso-regression" class="panel model-section">
-          <div class="model-heading"><div><span class="section-kicker">Regularization</span><h2>Lasso Regression</h2></div><span class="model-tag">L1 penalty</span></div>
-          <p>Reduces weak coefficients toward zero for a simpler regression signal.</p>
-          {% set report = regularized_reports.lasso %}
-          <div class="panel-card model-report"><dl><dt>Status</dt><dd>{{ report.status }}</dd>{% if report.feature %}<dt>Feature</dt><dd>{{ report.feature }}</dd><dt>Target</dt><dd>{{ report.target }}</dd><dt>Test R²</dt><dd>{{ '%.3f'|format(report.score) }}</dd>{% endif %}</dl></div>
-        </section>
-
-        <section id="decision-trees" class="panel model-section">
-          <div class="model-heading"><div><span class="section-kicker">Tree methods</span><h2>Decision Trees</h2></div><span class="model-tag">Price bands</span></div>
-          <p>Compare information gain and Gini impurity classification strategies.</p>
-          <div class="tree-grid">
-            {% for key, report in tree_reports.items() %}
-            <article class="panel-card tree-card" id="{{ key }}"><h3>{{ report.name }}</h3><p>{{ 'Information gain split' if key == 'id3' else 'Information gain with best threshold split' if key == 'c45' else 'Gini impurity split' }}</p><dl><dt>Status</dt><dd>{{ report.status }}</dd>{% if report.feature %}<dt>Feature</dt><dd>{{ report.feature }}</dd><dt>Test accuracy</dt><dd>{{ '%.2f'|format(report.accuracy * 100) }}%</dd>{% endif %}</dl></article>
+            </div>
+            {% endif %}
             {% endfor %}
           </div>
         </section>
 
+        <!-- 7. Data Optimization (PCA & Rolling Windows) -->
         <section id="optimization" class="panel">
-          <h2>Data Optimization</h2>
-          <p>Apply rolling windows and PCA to optimize the feature set.</p>
+          <div class="section-kicker">Unsupervised Learning & Feature Engineering</div>
+          <h2>Dimensionality Reduction (PCA) & Rolling Smoothing</h2>
+          <p>Principal Component Analysis and rolling statistical smoothing on real estate features.</p>
+
           <div class="panel-grid">
             <div class="panel-card">
-              <h3>Rolling window preview</h3>
-              {% if optimization.rolling_features %}
-              <ul>
-                {% for col, values in optimization.rolling_features.items() %}
-                <li><strong>{{ col }}:</strong> {{ values | join(', ') }}</li>
+              <h3>PCA Explained Variance</h3>
+              {% if optimization.pca_explained_variance %}
+              <p>Variance retained across top <strong>{{ optimization.pca_components }}</strong> principal components:</p>
+              <div class="pca-bars">
+                {% for var in optimization.pca_explained_variance %}
+                <div class="pca-item">
+                  <div class="pca-label">
+                    <span>Component {{ loop.index }}</span>
+                    <strong>{{ var }}%</strong>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ var }}%"></div>
+                  </div>
+                </div>
                 {% endfor %}
-              </ul>
+              </div>
+              <div class="pca-total">
+                <span>Cumulative Variance:</span>
+                <strong>{{ optimization.pca_cumulative_variance }}%</strong>
+              </div>
               {% else %}
               <p>{{ optimization.status }}</p>
               {% endif %}
             </div>
+
             <div class="panel-card">
-              <h3>PCA Explained Variance</h3>
-              {% if optimization.pca_explained_variance %}
-              <p>{{ optimization.pca_explained_variance | join(', ') }}</p>
+              <h3>Rolling Window Smoothing Preview</h3>
+              {% if optimization.rolling_features %}
+              <p>5-period rolling mean for noise reduction on primary numeric dimensions:</p>
+              <ul class="rolling-list">
+                {% for col, vals in optimization.rolling_features.items() %}
+                <li>
+                  <strong>{{ col }}:</strong>
+                  <span>{{ vals | join(', ') }}...</span>
+                </li>
+                {% endfor %}
+              </ul>
               {% else %}
               <p>{{ optimization.status }}</p>
               {% endif %}
@@ -193,5 +461,87 @@
         </section>
       </main>
     </div>
+
+    <!-- Frontend Interactive Script -->
+    <script>
+      // 1. Region Switcher
+      function switchRegion(regionId) {
+        window.location.href = '/dashboard?region=' + encodeURIComponent(regionId);
+      }
+
+      // 2. Dark/Light Mode Theme Toggle
+      const themeToggleBtn = document.getElementById('themeToggle');
+      const currentTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', currentTheme);
+      updateThemeBtn(currentTheme);
+
+      themeToggleBtn.addEventListener('click', () => {
+        const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeBtn(theme);
+      });
+
+      function updateThemeBtn(theme) {
+        themeToggleBtn.innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+      }
+
+      // 3. Live Price Predictor Ajax
+      const predForm = document.getElementById('predictionForm');
+      const predPriceEl = document.getElementById('predPrice');
+      const predTierEl = document.getElementById('predTier');
+      const predConfidenceEl = document.getElementById('predConfidence');
+      const predictBtn = document.getElementById('predictBtn');
+
+      async function runPrediction() {
+        const formData = new FormData(predForm);
+        const payload = {
+          region: document.getElementById('regionSelect').value,
+          m2_real: formData.get('m2_real'),
+          room_num: formData.get('room_num'),
+          bath_num: formData.get('bath_num'),
+          house_type: formData.get('house_type'),
+          condition: formData.get('condition'),
+          swimming_pool: formData.get('swimming_pool') ? 1 : 0,
+          garden: formData.get('garden') ? 1 : 0,
+          terrace: formData.get('terrace') ? 1 : 0,
+          lift: formData.get('lift') ? 1 : 0,
+          air_conditioner: formData.get('air_conditioner') ? 1 : 0,
+        };
+
+        predictBtn.innerText = 'Calculating...';
+        predictBtn.disabled = true;
+
+        try {
+          const res = await fetch('/api/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            predPriceEl.innerText = data.predicted_price_formatted;
+            predTierEl.innerText = data.tier;
+            predTierEl.className = 'tier-badge ' + (data.is_luxury ? 'luxury' : 'standard');
+            predConfidenceEl.innerText = data.confidence + '%';
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          predictBtn.innerText = '⚡ Calculate Live Prediction';
+          predictBtn.disabled = false;
+        }
+      }
+
+      predForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        runPrediction();
+      });
+
+      // Run initial prediction on page load
+      window.addEventListener('DOMContentLoaded', () => {
+        runPrediction();
+      });
+    </script>
   </body>
 </html>
