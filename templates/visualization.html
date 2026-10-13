@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Visualizations — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Visual Analytics Gallery{% endblock %}
+{% block page_title %}Academic Visualizations & Distributions{% endblock %}
+
+{% block content %}
+<div class="plot-grid">
+  <!-- Chart 1: Grade Distribution -->
+  <article class="plot-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+      <h3>Assessment Grade Distribution</h3>
+      {% if plots.histogram %}
+      <a href="data:image/png;base64,{{ plots.histogram }}" download="oulad_grade_distribution.png" class="btn-hero secondary" style="font-size: 0.78rem; padding: 5px 12px; text-decoration: none;">
+        📥 Download PNG
+      </a>
+      {% endif %}
+    </div>
+    <p class="plot-desc">Distribution of average assessment grades across students with median indicator.</p>
+    {% if plots.histogram %}
+    <img src="data:image/png;base64,{{ plots.histogram }}" alt="Grade Distribution" />
+    {% else %}
+    <p class="empty-state">Histogram unavailable.</p>
+    {% endif %}
+  </article>
+
+  <!-- Chart 2: Outcome Breakdown -->
+  <article class="plot-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+      <h3>Course Outcomes Breakdown</h3>
+      {% if plots.outcomes %}
+      <a href="data:image/png;base64,{{ plots.outcomes }}" download="oulad_course_outcomes.png" class="btn-hero secondary" style="font-size: 0.78rem; padding: 5px 12px; text-decoration: none;">
+        📥 Download PNG
+      </a>
+      {% endif %}
+    </div>
+    <p class="plot-desc">Total student counts across Pass, Distinction, Fail, and Withdrawn categories.</p>
+    {% if plots.outcomes %}
+    <img src="data:image/png;base64,{{ plots.outcomes }}" alt="Outcome Breakdown" />
+    {% else %}
+    <p class="empty-state">Outcome chart unavailable.</p>
+    {% endif %}
+  </article>
+
+  <!-- Chart 3: Credit Load vs Score Scatter -->
+  <article class="plot-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+      <h3>Credit Load vs. Assessment Grade</h3>
+      {% if plots.scatter %}
+      <a href="data:image/png;base64,{{ plots.scatter }}" download="oulad_credit_load_vs_grade.png" class="btn-hero secondary" style="font-size: 0.78rem; padding: 5px 12px; text-decoration: none;">
+        📥 Download PNG
+      </a>
+      {% endif %}
+    </div>
+    <p class="plot-desc">Scatter plot comparing total concurrent studied credits against student grades.</p>
+    {% if plots.scatter %}
+    <img src="data:image/png;base64,{{ plots.scatter }}" alt="Credit Load vs Score" />
+    {% else %}
+    <p class="empty-state">Scatter plot unavailable.</p>
+    {% endif %}
+  </article>
+
+  <!-- Chart 4: Correlation Matrix -->
+  <article class="plot-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+      <h3>Performance & Engagement Correlation Heatmap</h3>
+      {% if plots.heatmap %}
+      <a href="data:image/png;base64,{{ plots.heatmap }}" download="oulad_correlation_heatmap.png" class="btn-hero secondary" style="font-size: 0.78rem; padding: 5px 12px; text-decoration: none;">
+        📥 Download PNG
+      </a>
+      {% endif %}
+    </div>
+    <p class="plot-desc">Multi-variable Pearson correlation matrix between study features and pass rates.</p>
+    {% if plots.heatmap %}
+    <img src="data:image/png;base64,{{ plots.heatmap }}" alt="Correlation Heatmap" />
+    {% else %}
+    <p class="empty-state">Correlation heatmap unavailable.</p>
+    {% endif %}
+  </article>
+</div>
+{% endblock %}

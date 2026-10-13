@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}LearnLift — Open University Learning Analytics System{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+<div class="layout">
+  <!-- ── Sidebar Navigation ─────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">🎓</div>
+      <div class="brand-text">
+        <span class="brand-name">LearnLift</span>
+        <span class="brand-sub">OULAD Analytics Studio</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- 1. DATA PIPELINE -->
+      <div class="nav-section-title">Data Pipeline</div>
+      
+      <a href="/{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/' %}active{% endif %}">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Overview</span>
+      </a>
+
+      <a href="/dataset{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/dataset' %}active{% endif %}">
+        <span class="nav-icon">📂</span>
+        <span class="nav-label">Dataset Explorer</span>
+      </a>
+
+      <a href="/preprocessing{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/preprocessing' %}active{% endif %}">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Pre-processing</span>
+      </a>
+
+      <a href="/eda{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/eda' %}active{% endif %}">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-label">EDA Analytics</span>
+      </a>
+
+      <a href="/visualization{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/visualization' %}active{% endif %}">
+        <span class="nav-icon">📈</span>
+        <span class="nav-label">Visualizations</span>
+      </a>
+
+      <!-- 2. MACHINE LEARNING SUITE -->
+      <div class="nav-section-title" style="margin-top: 14px;">Machine Learning Suite</div>
+
+      <a href="/supervised{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path in ['/supervised', '/models'] %}active{% endif %}">
+        <span class="nav-icon">🤖</span>
+        <span class="nav-label">Supervised Learning</span>
+        <span class="nav-badge primary">24 Models</span>
+      </a>
+
+      <a href="/unsupervised{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/unsupervised' %}active{% endif %}">
+        <span class="nav-icon">🔮</span>
+        <span class="nav-label">Unsupervised Learning</span>
+        <span class="nav-badge success">6 Models</span>
+      </a>
+
+      <a href="/playground{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/playground' %}active{% endif %}">
+        <span class="nav-icon">🎛️</span>
+        <span class="nav-label">Model Playground</span>
+        <span class="nav-badge accent">Tuning Lab</span>
+      </a>
+
+      <!-- 3. STUDENT INTELLIGENCE & SIMULATION -->
+      <div class="nav-section-title" style="margin-top: 14px;">Student Intelligence</div>
+
+      <a href="/simulator{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/simulator' %}active{% endif %}">
+        <span class="nav-icon">⚡</span>
+        <span class="nav-label">What-If Study Simulator</span>
+        <span class="nav-badge warning">Interactive</span>
+      </a>
+
+      <a href="/predict{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/predict' %}active{% endif %}">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">Single Student Predictor</span>
+      </a>
+
+      <a href="/batch{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/batch' %}active{% endif %}">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Cohort Roster Analyzer</span>
+        <span class="nav-badge info">Batch AI</span>
+      </a>
+
+      <a href="/analytics{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="nav-item {% if request.path == '/analytics' %}active{% endif %}">
+        <span class="nav-icon">🔬</span>
+        <span class="nav-label">Analytics Leaderboard</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer with Theme Switch -->
+    <div class="sidebar-footer">
+      <div class="theme-toggle-row">
+        <span>Interface Theme</span>
+        <button id="themeToggle" class="theme-btn" title="Toggle Light/Dark Theme">🌙 Dark</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main Content Area ───────────────────── -->
+  <main class="content">
+    <!-- Top Global Header / Module Selector -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="page-kicker">{% block page_kicker %}OULAD Analytics Studio{% endblock %}</div>
+        <h1 class="page-title">{% block page_title %}Overview Dashboard{% endblock %}</h1>
+      </div>
+
+      <div class="topbar-right">
+        <div class="module-selector-box">
+          <label for="globalModuleSelect">Active Course:</label>
+          <select id="globalModuleSelect" class="module-dropdown" onchange="changeGlobalModule(this.value)">
+            {% for mod in available_modules %}
+            <option value="{{ mod.id }}" {% if mod.id == selected_module %}selected{% endif %}>
+              {{ mod.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Body Content -->
+    <div class="page-body">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+<!-- Global Theme & Module Navigation Script -->
+<script>
+  function changeGlobalModule(moduleId) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('module', moduleId);
+    window.location.href = url.toString();
+  }
+
+  const themeToggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeBtn(savedTheme);
+
+  themeToggle.addEventListener('click', () => {
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    updateThemeBtn(nextTheme);
+  });
+
+  function updateThemeBtn(theme) {
+    themeToggle.innerText = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+</script>
+</body>
+</html>

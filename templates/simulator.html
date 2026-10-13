@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block title %}What-If Study Simulator — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Interactive Academic Intervention{% endblock %}
+{% block page_title %}What-If Study Retention & Grade Simulator{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">⚡ Real-Time Intervention Sandbox</div>
+    <h2>Interactive What-If Academic Scenario Simulator</h2>
+    <p>
+      Adjust student engagement variables in real-time to observe immediate impacts on expected exam grades and course completion probabilities predicted by our ensemble ML models.
+    </p>
+  </div>
+  <div class="hero-actions">
+    <button class="btn-hero primary" onclick="resetToDefault()">
+      🔄 Reset Defaults
+    </button>
+  </div>
+</div>
+
+<div class="simulator-layout">
+  <!-- Left Side: Interactive Controls -->
+  <div class="panel-card sim-controls">
+    <h3>1. Student Profile & Baseline Background</h3>
+    <p class="text-secondary" style="font-size: 0.84rem; margin-bottom: 14px;">
+      Define the student's demographic context and current academic enrollment:
+    </p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="code_module">Course Module</label>
+        <select id="code_module" onchange="triggerSimulation()">
+          <option value="BBB" selected>Module BBB (Arts & Humanities)</option>
+          <option value="AAA">Module AAA (Social Sciences)</option>
+          <option value="CCC">Module CCC (STEM & Physical Sciences)</option>
+          <option value="DDD">Module DDD (Design & Technology)</option>
+          <option value="EEE">Module EEE (Engineering)</option>
+          <option value="FFF">Module FFF (Computing & IT)</option>
+          <option value="GGG">Module GGG (Education)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="highest_education">Prior Education</label>
+        <select id="highest_education" onchange="triggerSimulation()">
+          <option value="A Level or Equivalent" selected>A Level or Equivalent</option>
+          <option value="HE Qualification">HE Qualification (Higher Ed)</option>
+          <option value="Lower Than A Level">Lower Than A Level</option>
+          <option value="Post Graduate Qualification">Post Graduate</option>
+          <option value="No Formal quals">No Formal Qualifications</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="imd_band">Socioeconomic IMD Band</label>
+        <select id="imd_band" onchange="triggerSimulation()">
+          <option value="50-60%" selected>50-60% (Median)</option>
+          <option value="90-100%">90-100% (Affluent)</option>
+          <option value="70-80%">70-80%</option>
+          <option value="30-40%">30-40%</option>
+          <option value="0-10%">0-10% (Deprived)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="age_band">Age Bracket</label>
+        <select id="age_band" onchange="triggerSimulation()">
+          <option value="0-35" selected>0 - 35 Years</option>
+          <option value="35-55">35 - 55 Years</option>
+          <option value="55<=">55+ Years</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="disability">Disability Status</label>
+        <select id="disability" onchange="triggerSimulation()">
+          <option value="N" selected>No (N)</option>
+          <option value="Y">Yes (Y)</option>
+        </select>
+      </div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px dashed var(--border); margin: 20px 0;" />
+
+    <h3>2. Real-Time Intervention Sliders (Before vs After)</h3>
+    <p class="text-secondary" style="font-size: 0.84rem; margin-bottom: 16px;">
+      Drag the sliders to test targeted study interventions and observe instantaneous delta feedback:
+    </p>
+
+    <!-- Slider 1: Assessments Submitted -->
+    <div class="sim-slider-group">
+      <div class="slider-header">
+        <span class="slider-title">📝 Assessments Submitted Pacing</span>
+        <div class="slider-values">
+          <span class="val-base">Base: <strong id="val_base_submitted">3</strong></span>
+          <span class="val-arrow">➔</span>
+          <span class="val-sim">Simulated: <strong id="val_sim_submitted">6</strong></span>
+        </div>
+      </div>
+      <div class="dual-range-track">
+        <input type="range" id="sim_submitted" min="0" max="12" step="1" value="6" oninput="updateSliderVal('sim_submitted', 'val_sim_submitted'); triggerSimulation();" />
+      </div>
+      <div class="slider-sub">Simulates completing additional coursework and formative evaluations throughout the term.</div>
+    </div>
+
+    <!-- Slider 2: Study Credit Load -->
+    <div class="sim-slider-group">
+      <div class="slider-header">
+        <span class="slider-title">📚 Enrolled Study Credits Load</span>
+        <div class="slider-values">
+          <span class="val-base">Base: <strong id="val_base_credits">120</strong></span>
+          <span class="val-arrow">➔</span>
+          <span class="val-sim">Simulated: <strong id="val_sim_credits">60</strong></span>
+        </div>
+      </div>
+      <div class="dual-range-track">
+        <input type="range" id="sim_credits" min="30" max="240" step="30" value="60" oninput="updateSliderVal('sim_credits', 'val_sim_credits'); triggerSimulation();" />
+      </div>
+      <div class="slider-sub">Simulates de-loading course credit overload to improve per-course study time.</div>
+    </div>
+
+    <!-- Slider 3: Registration Lead Time -->
+    <div class="sim-slider-group">
+      <div class="slider-header">
+        <span class="slider-title">⏳ Early Registration Lead Time (Days Before Start)</span>
+        <div class="slider-values">
+          <span class="val-base">Base: <strong id="val_base_lead_time">10</strong></span>
+          <span class="val-arrow">➔</span>
+          <span class="val-sim">Simulated: <strong id="val_sim_lead_time">60</strong></span>
+        </div>
+      </div>
+      <div class="dual-range-track">
+        <input type="range" id="sim_lead_time" min="0" max="180" step="5" value="60" oninput="updateSliderVal('sim_lead_time', 'val_sim_lead_time'); triggerSimulation();" />
+      </div>
+      <div class="slider-sub">Simulates early onboarding and orientation preparation prior to module start.</div>
+    </div>
+
+    <!-- Slider 4: Module Retakes -->
+    <div class="sim-slider-group">
+      <div class="slider-header">
+        <span class="slider-title">🔄 Previous Module Attempts</span>
+        <div class="slider-values">
+          <span class="val-base">Base: <strong id="val_base_attempts">1</strong></span>
+          <span class="val-arrow">➔</span>
+          <span class="val-sim">Simulated: <strong id="val_sim_attempts">0</strong></span>
+        </div>
+      </div>
+      <div class="dual-range-track">
+        <input type="range" id="sim_attempts" min="0" max="5" step="1" value="0" oninput="updateSliderVal('sim_attempts', 'val_sim_attempts'); triggerSimulation();" />
+      </div>
+      <div class="slider-sub">Simulates taking the module as a fresh primary attempt.</div>
+    </div>
+  </div>
+
+  <!-- Right Side: Live Simulation Dashboard -->
+  <div class="sim-dashboard">
+    <!-- Comparison Card -->
+    <div class="panel-card sim-result-card" id="simCard">
+      <div class="sim-badge-live">
+        <span class="pulse-dot"></span> Real-Time AI Simulation Active
+      </div>
+
+      <h3 style="margin-top: 10px;">Predicted Outcome Shift</h3>
+
+      <!-- Delta Highlight Ribbon -->
+      <div class="delta-hero" id="deltaHeroBox">
+        <div class="delta-grade-box">
+          <span class="delta-title">Predicted Grade Delta</span>
+          <strong class="delta-number" id="deltaGradeText">+0.0%</strong>
+        </div>
+        <div class="delta-prob-box">
+          <span class="delta-title">Pass Probability Delta</span>
+          <strong class="delta-number" id="deltaPassText">+0.0%</strong>
+        </div>
+      </div>
+
+      <!-- Before vs After Metric Comparison Grid -->
+      <div class="sim-compare-grid">
+        <div class="compare-column base-col">
+          <span class="col-tag">Baseline State</span>
+          <div class="col-metric">
+            <span class="col-lbl">Expected Grade:</span>
+            <strong class="col-val" id="baseGrade">--%</strong>
+          </div>
+          <div class="col-metric">
+            <span class="col-lbl">Pass Probability:</span>
+            <strong class="col-val" id="basePassProb">--%</strong>
+          </div>
+          <div class="col-metric">
+            <span class="col-lbl">Dropout Risk:</span>
+            <strong class="col-val" id="baseFailProb">--%</strong>
+          </div>
+          <div class="col-status">
+            <span class="status-chip" id="baseRiskTag">Evaluating...</span>
+          </div>
+        </div>
+
+        <div class="compare-divider">➔</div>
+
+        <div class="compare-column sim-col">
+          <span class="col-tag primary">Simulated State</span>
+          <div class="col-metric">
+            <span class="col-lbl">Expected Grade:</span>
+            <strong class="col-val highlight" id="simGrade">--%</strong>
+          </div>
+          <div class="col-metric">
+            <span class="col-lbl">Pass Probability:</span>
+            <strong class="col-val highlight" id="simPassProb">--%</strong>
+          </div>
+          <div class="col-metric">
+            <span class="col-lbl">Dropout Risk:</span>
+            <strong class="col-val" id="simFailProb">--%</strong>
+          </div>
+          <div class="col-status">
+            <span class="status-chip" id="simRiskTag">Evaluating...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Academic Intervention Advice -->
+      <div class="intervention-box" id="interventionBox">
+        <div class="intervention-header">
+          <span class="icon">💡</span>
+          <strong>Automated Advisor Insights & Retention Strategy:</strong>
+        </div>
+        <p id="simAdviceText">
+          Calculating simulation impacts across LightGBM & Gradient Boosting regression pipelines...
+        </p>
+      </div>
+
+      <!-- Key Insights Checklist -->
+      <div class="action-checklist">
+        <h4>Key Takeaways for this Simulation:</h4>
+        <ul>
+          <li id="takeawayPacing">Submitting on-time assessments delivers the highest marginal grade boost.</li>
+          <li id="takeawayCredits">Balancing study credits below 120 reduces burnout and dropout rate.</li>
+          <li id="takeawayLead">Registering early provides orientation momentum and syllabus familiarization.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let debounceTimer = null;
+
+  function updateSliderVal(sliderId, textId) {
+    const val = document.getElementById(sliderId).value;
+    document.getElementById(textId).innerText = val;
+  }
+
+  function resetToDefault() {
+    document.getElementById('sim_submitted').value = 6;
+    document.getElementById('val_sim_submitted').innerText = 6;
+    
+    document.getElementById('sim_credits').value = 60;
+    document.getElementById('val_sim_credits').innerText = 60;
+
+    document.getElementById('sim_lead_time').value = 60;
+    document.getElementById('val_sim_lead_time').innerText = 60;
+
+    document.getElementById('sim_attempts').value = 0;
+    document.getElementById('val_sim_attempts').innerText = 0;
+
+    triggerSimulation();
+  }
+
+  function triggerSimulation() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(runSimulationAPI, 120);
+  }
+
+  async function runSimulationAPI() {
+    const payload = {
+      code_module: document.getElementById('code_module').value,
+      highest_education: document.getElementById('highest_education').value,
+      imd_band: document.getElementById('imd_band').value,
+      age_band: document.getElementById('age_band').value,
+      disability: document.getElementById('disability').value,
+      gender: 'M',
+
+      base_credits: 120,
+      base_attempts: 1,
+      base_submitted: 3,
+      base_lead_time: 10,
+
+      sim_credits: parseFloat(document.getElementById('sim_credits').value),
+      sim_attempts: parseFloat(document.getElementById('sim_attempts').value),
+      sim_submitted: parseFloat(document.getElementById('sim_submitted').value),
+      sim_lead_time: parseFloat(document.getElementById('sim_lead_time').value),
+    };
+
+    try {
+      const res = await fetch('/api/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const base = data.base;
+        const sim = data.simulated;
+
+        // Baseline updates
+        document.getElementById('baseGrade').innerText = base.predicted_grade_formatted;
+        document.getElementById('basePassProb').innerText = base.pass_probability + '%';
+        document.getElementById('baseFailProb').innerText = base.dropout_risk_probability + '%';
+        
+        const baseRiskEl = document.getElementById('baseRiskTag');
+        baseRiskEl.innerText = base.risk_level;
+        baseRiskEl.className = 'status-chip ' + base.tier_class;
+
+        // Simulated updates
+        document.getElementById('simGrade').innerText = sim.predicted_grade_formatted;
+        document.getElementById('simPassProb').innerText = sim.pass_probability + '%';
+        document.getElementById('simFailProb').innerText = sim.dropout_risk_probability + '%';
+        
+        const simRiskEl = document.getElementById('simRiskTag');
+        simRiskEl.innerText = sim.risk_level;
+        simRiskEl.className = 'status-chip ' + sim.tier_class;
+
+        // Delta highlights
+        const dGrade = data.delta_grade;
+        const dPass = data.delta_pass_prob;
+        const deltaGradeEl = document.getElementById('deltaGradeText');
+        const deltaPassEl = document.getElementById('deltaPassText');
+        const heroBox = document.getElementById('deltaHeroBox');
+
+        deltaGradeEl.innerText = (dGrade >= 0 ? '+' : '') + dGrade.toFixed(1) + '%';
+        deltaPassEl.innerText = (dPass >= 0 ? '+' : '') + dPass.toFixed(1) + '%';
+
+        if (dGrade >= 0) {
+          heroBox.className = 'delta-hero positive';
+        } else {
+          heroBox.className = 'delta-hero negative';
+        }
+
+        // Advice text
+        document.getElementById('simAdviceText').innerText = sim.recommended_action;
+      }
+    } catch (err) {
+      console.error('Simulation error:', err);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    runSimulationAPI();
+  });
+</script>
+{% endblock %}

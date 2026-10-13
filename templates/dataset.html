@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Dataset Explorer — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Data Ingestion & Inspection{% endblock %}
+{% block page_title %}Open University Dataset Explorer{% endblock %}
+
+{% block content %}
+<div class="metric-grid">
+  <div class="metric-card">
+    <span class="metric-label">Total Student Records</span>
+    <strong class="metric-value">{{ '{:,}'.format(dataset_info.rows) }}</strong>
+    <span class="metric-sub">Joined from OULAD core files</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Total Attributes (Columns)</span>
+    <strong class="metric-value">{{ dataset_info.columns }}</strong>
+    <span class="metric-sub">Demographic & Academic variables</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Selected Course Cohort</span>
+    <strong class="metric-value text-primary">{{ selected_module }}</strong>
+    <span class="metric-sub">{% if selected_module == 'ALL' %}All 7 Courses Combined{% else %}Module {{ selected_module }}{% endif %}</span>
+  </div>
+</div>
+
+<!-- Columns Specification Table -->
+<div class="panel-card" style="margin-bottom: 24px;">
+  <h3>Dataset Columns & Schema Metadata</h3>
+  <p>Detailed listing of features, data types, null rates, and sample values:</p>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Column Name</th>
+          <th>Data Type</th>
+          <th>Non-Null Count</th>
+          <th>Missing Count (%)</th>
+          <th>Unique Values</th>
+          <th>Sample Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for col in dataset_info.columns_info %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ col.name }}</strong></td>
+          <td><code>{{ col.dtype }}</code></td>
+          <td>{{ '{:,}'.format(col.non_null) }}</td>
+          <td>
+            <span class="{% if col.null_count > 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ col.null_count }} ({{ col.null_pct }}%)
+            </span>
+          </td>
+          <td>{{ col.unique_count }}</td>
+          <td><span class="badge-sample">{{ col.sample }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Sample Records: Head -->
+<div class="panel-card" style="margin-bottom: 24px;">
+  <h3>Sample Records Preview (First 8 Rows)</h3>
+  <p>Top rows from the processed feature matrix:</p>
+  <div class="table-responsive">
+    <table class="data-table compact">
+      <thead>
+        <tr>
+          {% if dataset_info.head_records and dataset_info.head_records[0] %}
+            {% for key in dataset_info.head_records[0].keys() %}
+            <th>{{ key }}</th>
+            {% endfor %}
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in dataset_info.head_records %}
+        <tr>
+          {% for val in row.values() %}
+          <td>{{ val }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Sample Records: Tail -->
+<div class="panel-card">
+  <h3>Sample Records Preview (Last 5 Rows)</h3>
+  <div class="table-responsive">
+    <table class="data-table compact">
+      <thead>
+        <tr>
+          {% if dataset_info.tail_records and dataset_info.tail_records[0] %}
+            {% for key in dataset_info.tail_records[0].keys() %}
+            <th>{{ key }}</th>
+            {% endfor %}
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in dataset_info.tail_records %}
+        <tr>
+          {% for val in row.values() %}
+          <td>{{ val }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

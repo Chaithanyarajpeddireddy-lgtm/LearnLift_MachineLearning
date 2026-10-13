@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+powershell.bat
+powershell.cmd
+.idea/workspace.xml
+.idea/httpRequests/
+.DS_Store
+*studentVle.csv

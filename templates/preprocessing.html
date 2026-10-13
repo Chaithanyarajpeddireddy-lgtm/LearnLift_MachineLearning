@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Pre-processing — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Data Engineering Pipeline{% endblock %}
+{% block page_title %}Data Pre-processing & Feature Scaling{% endblock %}
+
+{% block content %}
+<!-- Dataset Export Banner -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">📦 Feature Pipeline Output</div>
+    <h2>Engineered & Imputed Dataset Export</h2>
+    <p>
+      Export the cleaned, median-imputed, leak-free merged student learning dataset ready for downstream analytics or external model training.
+    </p>
+  </div>
+  <div class="hero-actions">
+    <a href="/api/export-preprocessed{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="btn-hero primary" style="display: inline-flex; align-items: center; gap: 8px;">
+      📥 Download Cleaned Dataset (CSV)
+    </a>
+  </div>
+</div>
+
+<!-- Preprocessing Strategy Cards -->
+<div class="card-grid-2" style="margin-bottom: 24px;">
+  <div class="panel-card">
+    <div class="card-badge primary">Step 1: Missing Value Imputation</div>
+    <h3 style="margin-top: 10px;">Imputation Protocol</h3>
+    <p>Ensures zero data leakage by computing statistical parameters strictly on the training partition:</p>
+    <ul class="clean-list">
+      <li><strong>Numerical Features:</strong> {{ prep_info.missing_strategy.numerical }}</li>
+      <li><strong>Categorical Features:</strong> {{ prep_info.missing_strategy.categorical }}</li>
+      <li><strong>Replaced Missing Markers:</strong> OULAD '?' markers cast to NaN before imputation.</li>
+    </ul>
+  </div>
+
+  <div class="panel-card">
+    <div class="card-badge success">Step 2: Feature Transformation</div>
+    <h3 style="margin-top: 10px;">Scaling & One-Hot Encoding</h3>
+    <p>Prepares clean feature matrices for both linear and tree-based estimators:</p>
+    <ul class="clean-list">
+      <li><strong>Continuous Scaling:</strong> {{ prep_info.scaling_strategy }}</li>
+      <li><strong>Categorical Encoding:</strong> {{ prep_info.encoding_strategy }}</li>
+      <li><strong>Data Partition:</strong> {{ prep_info.train_test_split }}</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Features Categorization Table -->
+<div class="panel-grid" style="margin-bottom: 24px;">
+  <div class="panel-card">
+    <h3>Numerical Features (Scaled & Imputed)</h3>
+    <p>Continuous and discrete learning engagement metrics:</p>
+    <div class="tag-cloud">
+      {% for feat in prep_info.numeric_columns %}
+      <span class="feature-tag num">{{ feat }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="panel-card">
+    <h3>Categorical Features (One-Hot Encoded)</h3>
+    <p>Demographic, socioeconomic, and course identifiers:</p>
+    <div class="tag-cloud">
+      {% for feat in prep_info.categorical_columns %}
+      <span class="feature-tag cat">{{ feat }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Preprocessed Preview Table -->
+{% if prep_info.sample_scaled_preview %}
+<div class="panel-card">
+  <h3>Numeric Feature Preview (Unscaled Values)</h3>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          {% for key in prep_info.sample_scaled_preview[0].keys() %}
+          <th>{{ key }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in prep_info.sample_scaled_preview %}
+        <tr>
+          {% for val in row.values() %}
+          <td>{{ val }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

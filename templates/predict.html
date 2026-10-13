@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Predict Student — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Inference & Early Intervention{% endblock %}
+{% block page_title %}Live Student Outcome & Grade Predictor{% endblock %}
+
+{% block content %}
+<div class="predictor-grid">
+  <!-- Prediction Form -->
+  <form id="predictionForm" class="predictor-form panel-card">
+    <h3>Student Demographic & Study Profile</h3>
+    <p class="text-secondary" style="margin-bottom: 12px;">Input student indicators to compute real-time academic assessments:</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="code_module">Course Module</label>
+        <select id="code_module" name="code_module">
+          <option value="AAA">Module AAA (Social Sciences)</option>
+          <option value="BBB" selected>Module BBB (Arts & Humanities)</option>
+          <option value="CCC">Module CCC (STEM & Physical Sciences)</option>
+          <option value="DDD">Module DDD (Design & Technology)</option>
+          <option value="EEE">Module EEE (Engineering)</option>
+          <option value="FFF">Module FFF (Computing & IT)</option>
+          <option value="GGG">Module GGG (Education)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="highest_education">Prior Education Level</label>
+        <select id="highest_education" name="highest_education">
+          <option value="HE Qualification">HE Qualification (Higher Ed)</option>
+          <option value="A Level or Equivalent" selected>A Level or Equivalent</option>
+          <option value="Lower Than A Level">Lower Than A Level</option>
+          <option value="Post Graduate Qualification">Post Graduate Qualification</option>
+          <option value="No Formal quals">No Formal Qualifications</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="imd_band">Socioeconomic IMD Band</label>
+        <select id="imd_band" name="imd_band">
+          <option value="90-100%">90-100% (Least Deprived)</option>
+          <option value="70-80%">70-80%</option>
+          <option value="50-60%" selected>50-60% (Average)</option>
+          <option value="30-40%">30-40%</option>
+          <option value="0-10%">0-10% (Most Deprived)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="age_band">Age Bracket</label>
+        <select id="age_band" name="age_band">
+          <option value="0-35" selected>0 - 35 Years</option>
+          <option value="35-55">35 - 55 Years</option>
+          <option value="55<=">55+ Years</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender">
+          <option value="M" selected>Male (M)</option>
+          <option value="F">Female (F)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="studied_credits">Total Enrolled Credits</label>
+        <input type="number" id="studied_credits" name="studied_credits" value="60" min="30" max="360" step="30" required />
+      </div>
+
+      <div class="form-group">
+        <label for="num_of_prev_attempts">Prior Module Retakes</label>
+        <input type="number" id="num_of_prev_attempts" name="num_of_prev_attempts" value="0" min="0" max="6" required />
+      </div>
+
+      <div class="form-group">
+        <label for="assessments_submitted">Assessments Submitted</label>
+        <input type="number" id="assessments_submitted" name="assessments_submitted" value="4" min="0" max="12" required />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="registration_lead_time">Days Enrolled Before Course Start</label>
+        <input type="number" id="registration_lead_time" name="registration_lead_time" value="45" min="0" max="300" required />
+      </div>
+
+      <div class="form-group">
+        <label for="disability">Declared Disability</label>
+        <select id="disability" name="disability">
+          <option value="N" selected>No (N)</option>
+          <option value="Y">Yes (Y)</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary" id="predictBtn">
+      ⚡ Run Real-Time Academic Assessment
+    </button>
+  </form>
+
+  <!-- Real-Time Output Result Card -->
+  <div class="predictor-result panel-card" id="resultCard">
+    <div class="result-header" style="font-weight: 700; color: var(--text-secondary); margin-bottom: 6px;">
+      Predicted Final Assessment Grade
+    </div>
+
+    <!-- Semi-Circular SVG Radial Gauge Meter -->
+    <div class="gauge-container" style="position: relative; width: 240px; height: 135px; margin: 10px auto 0;">
+      <svg viewBox="0 0 200 110" style="width: 100%; height: 100%;">
+        <!-- Background Arc: Radius 80, centered at (100, 95) -->
+        <path d="M 20 95 A 80 80 0 0 1 180 95" 
+              fill="none" 
+              stroke="var(--surface-alt)" 
+              stroke-width="14" 
+              stroke-linecap="round" />
+        
+        <!-- Foreground Animated Progress Arc -->
+        <path id="gaugeProgressArc" 
+              d="M 20 95 A 80 80 0 0 1 180 95" 
+              fill="none" 
+              stroke="var(--primary)" 
+              stroke-width="14" 
+              stroke-linecap="round"
+              stroke-dasharray="251.33"
+              stroke-dashoffset="251.33"
+              style="transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s ease;" />
+      </svg>
+      
+      <!-- Value Display inside Gauge -->
+      <div style="position: absolute; bottom: 8px; left: 0; right: 0; text-align: center;">
+        <div class="score-display" id="predScore" style="font-size: 2.3rem; margin: 0; font-family: var(--font-mono); font-weight: 800;">--.-%</div>
+      </div>
+    </div>
+    
+    <div class="risk-badge" id="predRisk" style="margin-top: 10px;">Evaluating student...</div>
+
+    <div class="prediction-details">
+      <div class="detail-row">
+        <span>Pass Probability:</span>
+        <strong id="predPassProb">--%</strong>
+      </div>
+      <div class="detail-row">
+        <span>Dropout / Fail Risk:</span>
+        <strong id="predFailProb">--%</strong>
+      </div>
+      <div class="detail-row">
+        <span>Inference Engine:</span>
+        <strong>LightGBM + HistGradient</strong>
+      </div>
+    </div>
+
+    <div class="alert-box" id="predAdvice">
+      <strong>Recommended Early Intervention Action:</strong>
+      <p id="predAdviceText">Awaiting student profile submission...</p>
+    </div>
+
+    <div class="live-indicator">
+      <span class="pulse-dot"></span> ML Inference Engine Ready
+    </div>
+  </div>
+</div>
+
+<script>
+  const predForm = document.getElementById('predictionForm');
+  const predScoreEl = document.getElementById('predScore');
+  const predRiskEl = document.getElementById('predRisk');
+  const predPassProbEl = document.getElementById('predPassProb');
+  const predFailProbEl = document.getElementById('predFailProb');
+  const predAdviceTextEl = document.getElementById('predAdviceText');
+  const predictBtn = document.getElementById('predictBtn');
+  const gaugeArc = document.getElementById('gaugeProgressArc');
+
+  async function runStudentPrediction() {
+    const formData = new FormData(predForm);
+    const payload = {
+      code_module: formData.get('code_module'),
+      highest_education: formData.get('highest_education'),
+      imd_band: formData.get('imd_band'),
+      age_band: formData.get('age_band'),
+      gender: formData.get('gender'),
+      disability: formData.get('disability'),
+      studied_credits: formData.get('studied_credits'),
+      num_of_prev_attempts: formData.get('num_of_prev_attempts'),
+      assessments_submitted: formData.get('assessments_submitted'),
+      registration_lead_time: formData.get('registration_lead_time'),
+    };
+
+    predictBtn.innerText = 'Calculating Student Assessment...';
+    predictBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        predScoreEl.innerText = data.predicted_grade_formatted;
+        predRiskEl.innerText = data.risk_level;
+        predRiskEl.className = 'risk-badge ' + data.tier_class;
+        predPassProbEl.innerText = data.pass_probability + '%';
+        predFailProbEl.innerText = data.dropout_risk_probability + '%';
+        predAdviceTextEl.innerText = data.recommended_action;
+
+        // Animate Radial Gauge Meter
+        const maxArc = 251.33;
+        const score = Math.max(0, Math.min(100, parseFloat(data.predicted_grade)));
+        const offset = maxArc - (score / 100) * maxArc;
+        gaugeArc.style.strokeDashoffset = offset;
+
+        // Color coding:
+        if (score >= 70) {
+          gaugeArc.style.stroke = 'var(--success)';
+        } else if (score >= 50) {
+          gaugeArc.style.stroke = 'var(--primary)';
+        } else if (score >= 40) {
+          gaugeArc.style.stroke = 'var(--warning)';
+        } else {
+          gaugeArc.style.stroke = 'var(--danger)';
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      predictBtn.innerText = '⚡ Run Real-Time Academic Assessment';
+      predictBtn.disabled = false;
+    }
+  }
+
+  predForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    runStudentPrediction();
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    runStudentPrediction();
+  });
+</script>
+{% endblock %}

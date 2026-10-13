@@ -1,0 +1,9 @@
+flask
+pandas
+numpy
+matplotlib
+scikit-learn
+scipy
+xgboost
+lightgbm
+umap-learn

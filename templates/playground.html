@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Model Playground — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Interactive Hyperparameter Lab{% endblock %}
+{% block page_title %}Live Hyperparameter Tuning Playground{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">🎛️ Live Model Training & Tuning Lab</div>
+    <h2>Interactive Hyperparameter Tuning & Overfitting Diagnostic</h2>
+    <p>
+      Adjust key hyperparameters in real-time to train custom models on OULAD student data.
+      Observe train vs. test generalization gaps and detect Overfitting or Underfitting instantly.
+    </p>
+  </div>
+  <div class="hero-actions">
+    <button class="btn-hero primary" onclick="runTuneTraining()">
+      ⚡ Train Model Now
+    </button>
+  </div>
+</div>
+
+<div class="playground-layout">
+  <!-- Controls Panel -->
+  <div class="panel-card playground-controls">
+    <h3>1. Select Algorithm & Configure Hyperparameters</h3>
+    <p class="text-secondary" style="font-size: 0.84rem; margin-bottom: 16px;">
+      Choose an estimator family and fine-tune its complexity parameters:
+    </p>
+
+    <!-- Algorithm Selector -->
+    <div class="form-group" style="margin-bottom: 18px;">
+      <label for="algorithmSelect"><strong>Base Estimator Family:</strong></label>
+      <select id="algorithmSelect" class="module-dropdown" style="width: 100%;" onchange="onAlgorithmChange()">
+        <option value="dt" selected>🌳 Decision Tree Classifier</option>
+        <option value="rf">🌲 Random Forest (Ensemble Bagging)</option>
+        <option value="gb">🚀 Gradient Boosting Classifier</option>
+        <option value="knn">📍 K-Nearest Neighbors (KNN)</option>
+        <option value="lr">📐 Logistic Regression (L2)</option>
+      </select>
+    </div>
+
+    <hr style="border: 0; border-top: 1px dashed var(--border); margin: 18px 0;" />
+
+    <!-- Dynamic Parameter Sections -->
+    <!-- Decision Tree Parameters -->
+    <div id="params_dt" class="param-group active">
+      <div class="sim-slider-group">
+        <div class="slider-header">
+          <span class="slider-title">Max Tree Depth (`max_depth`)</span>
+          <strong id="val_dt_depth" class="badge primary">5</strong>
+        </div>
+        <input type="range" id="dt_depth" min="1" max="25" step="1" value="5" oninput="updateVal('dt_depth', 'val_dt_depth')" />
+        <div class="slider-sub">Controls maximum tree split depth. High depth often leads to overfitting.</div>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label for="dt_criterion">Split Impurity Criterion:</label>
+        <select id="dt_criterion">
+          <option value="gini" selected>Gini Impurity (CART)</option>
+          <option value="entropy">Entropy / Information Gain (ID3/C4.5)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Random Forest Parameters -->
+    <div id="params_rf" class="param-group" style="display: none;">
+      <div class="sim-slider-group">
+        <div class="slider-header">
+          <span class="slider-title">Number of Estimators (`n_estimators`)</span>
+          <strong id="val_rf_est" class="badge primary">50</strong>
+        </div>
+        <input type="range" id="rf_est" min="10" max="200" step="10" value="50" oninput="updateVal('rf_est', 'val_rf_est')" />
+        <div class="slider-sub">Total number of bootstrap trees in the ensemble forest.</div>
+      </div>
+
+      <div class="sim-slider-group" style="margin-top: 14px;">
+        <div class="slider-header">
+          <span class="slider-title">Max Tree Depth (`max_depth`)</span>
+          <strong id="val_rf_depth" class="badge primary">8</strong>
+        </div>
+        <input type="range" id="rf_depth" min="2" max="20" step="1" value="8" oninput="updateVal('rf_depth', 'val_rf_depth')" />
+        <div class="slider-sub">Limits individual tree expansion inside the forest.</div>
+      </div>
+    </div>
+
+    <!-- Gradient Boosting Parameters -->
+    <div id="params_gb" class="param-group" style="display: none;">
+      <div class="sim-slider-group">
+        <div class="slider-header">
+          <span class="slider-title">Number of Boosting Stages (`n_estimators`)</span>
+          <strong id="val_gb_est" class="badge primary">50</strong>
+        </div>
+        <input type="range" id="gb_est" min="10" max="150" step="10" value="50" oninput="updateVal('gb_est', 'val_gb_est')" />
+        <div class="slider-sub">Number of sequential boosting iterations.</div>
+      </div>
+
+      <div class="sim-slider-group" style="margin-top: 14px;">
+        <div class="slider-header">
+          <span class="slider-title">Learning Rate Shrinkage (`learning_rate`)</span>
+          <strong id="val_gb_lr" class="badge primary">0.10</strong>
+        </div>
+        <input type="range" id="gb_lr" min="0.01" max="0.50" step="0.01" value="0.10" oninput="updateVal('gb_lr', 'val_gb_lr')" />
+        <div class="slider-sub">Step size shrinkage used to prevent overfitting in boosting.</div>
+      </div>
+    </div>
+
+    <!-- KNN Parameters -->
+    <div id="params_knn" class="param-group" style="display: none;">
+      <div class="sim-slider-group">
+        <div class="slider-header">
+          <span class="slider-title">Number of Neighbors (`n_neighbors` · k)</span>
+          <strong id="val_knn_k" class="badge primary">5</strong>
+        </div>
+        <input type="range" id="knn_k" min="1" max="25" step="1" value="5" oninput="updateVal('knn_k', 'val_knn_k')" />
+        <div class="slider-sub">Small $k$ is sensitive to noise; large $k$ creates smoother decision boundaries.</div>
+      </div>
+    </div>
+
+    <!-- Logistic Regression Parameters -->
+    <div id="params_lr" class="param-group" style="display: none;">
+      <div class="sim-slider-group">
+        <div class="slider-header">
+          <span class="slider-title">Inverse Regularization Strength (`C`)</span>
+          <strong id="val_lr_c" class="badge primary">1.0</strong>
+        </div>
+        <input type="range" id="lr_c" min="0.01" max="5.0" step="0.05" value="1.0" oninput="updateVal('lr_c', 'val_lr_c')" />
+        <div class="slider-sub">Smaller values specify stronger regularization (penalizing large weights).</div>
+      </div>
+    </div>
+
+    <button type="button" class="btn-primary" style="margin-top: 24px; width: 100%;" id="trainBtn" onclick="runTuneTraining()">
+      ⚡ Retrain Model with Selected Hyperparameters
+    </button>
+  </div>
+
+  <!-- Output Diagnostic Panel -->
+  <div class="playground-dashboard">
+    <div class="panel-card" id="tuneResultCard">
+      <div class="sim-badge-live">
+        <span class="pulse-dot"></span> Live Training Results
+      </div>
+
+      <h3 style="margin-top: 8px;" id="activeModelTitle">Trained Model Performance</h3>
+
+      <!-- Overfitting / Generalization Alert Banner -->
+      <div class="diagnosis-banner success" id="diagBanner">
+        <div class="diag-icon" id="diagIcon">✅</div>
+        <div class="diag-content">
+          <strong id="diagTitle">Optimal Generalization</strong>
+          <p id="diagText">The model maintains a healthy balance between training accuracy and validation accuracy.</p>
+        </div>
+      </div>
+
+      <!-- Train vs Test Accuracy Metric Cards -->
+      <div class="metric-grid" style="margin-top: 16px;">
+        <div class="metric-card">
+          <span class="metric-label">Training Set Accuracy</span>
+          <strong class="metric-value text-primary" id="metricTrainAcc">--%</strong>
+          <span class="metric-sub">Evaluated on 80% split</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Test Set Accuracy</span>
+          <strong class="metric-value text-success" id="metricTestAcc">--%</strong>
+          <span class="metric-sub">Evaluated on unseen 20% split</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Generalization Gap</span>
+          <strong class="metric-value" id="metricGap">--%</strong>
+          <span class="metric-sub">(Train Acc − Test Acc)</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Training Execution Time</span>
+          <strong class="metric-value text-warning" id="metricFitTime">-- ms</strong>
+          <span class="metric-sub">Wall-clock fit duration</span>
+        </div>
+      </div>
+
+      <!-- Confusion Matrix Breakdown -->
+      <h4 style="margin: 20px 0 10px;">Test Set Confusion Matrix (Unseen Validation Samples)</h4>
+      <div class="cm-grid">
+        <div class="cm-cell correct">
+          <div class="cm-header">
+            <strong id="cm_tn">--</strong>
+            <span class="cm-icon">✅</span>
+          </div>
+          <span class="cm-title">TN — True Negative</span>
+          <p class="cm-desc">Correctly predicted <strong>Dropout / Fail</strong></p>
+        </div>
+
+        <div class="cm-cell error">
+          <div class="cm-header">
+            <strong id="cm_fp">--</strong>
+            <span class="cm-icon">❌</span>
+          </div>
+          <span class="cm-title">FP — False Positive</span>
+          <p class="cm-desc">Predicted Pass → actually <strong>Failed</strong></p>
+        </div>
+
+        <div class="cm-cell error">
+          <div class="cm-header">
+            <strong id="cm_fn">--</strong>
+            <span class="cm-icon">⚠️</span>
+          </div>
+          <span class="cm-title">FN — False Negative</span>
+          <p class="cm-desc">Predicted Fail → actually <strong>Passed</strong></p>
+        </div>
+
+        <div class="cm-cell correct">
+          <div class="cm-header">
+            <strong id="cm_tp">--</strong>
+            <span class="cm-icon">🎯</span>
+          </div>
+          <span class="cm-title">TP — True Positive</span>
+          <p class="cm-desc">Correctly predicted <strong>Pass / Distinction</strong></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function updateVal(sliderId, labelId) {
+    document.getElementById(labelId).innerText = document.getElementById(sliderId).value;
+  }
+
+  function onAlgorithmChange() {
+    const alg = document.getElementById('algorithmSelect').value;
+    const groups = ['dt', 'rf', 'gb', 'knn', 'lr'];
+    groups.forEach(g => {
+      const el = document.getElementById('params_' + g);
+      if (el) el.style.display = (g === alg) ? 'block' : 'none';
+    });
+    runTuneTraining();
+  }
+
+  async function runTuneTraining() {
+    const alg = document.getElementById('algorithmSelect').value;
+    const btn = document.getElementById('trainBtn');
+    btn.innerText = '⏳ Training Model...';
+    btn.disabled = true;
+
+    const payload = {
+      algorithm: alg,
+      module: '{{ selected_module }}',
+      max_depth: alg === 'dt' ? document.getElementById('dt_depth').value : document.getElementById('rf_depth').value,
+      criterion: document.getElementById('dt_criterion').value,
+      n_estimators: alg === 'rf' ? document.getElementById('rf_est').value : document.getElementById('gb_est').value,
+      learning_rate: document.getElementById('gb_lr').value,
+      n_neighbors: document.getElementById('knn_k').value,
+      c_val: document.getElementById('lr_c').value,
+    };
+
+    try {
+      const res = await fetch('/api/tune', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        document.getElementById('metricTrainAcc').innerText = data.train_acc + '%';
+        document.getElementById('metricTestAcc').innerText = data.test_acc + '%';
+        document.getElementById('metricGap').innerText = (data.gap >= 0 ? '+' : '') + data.gap + '%';
+        document.getElementById('metricFitTime').innerText = data.fit_time_ms + ' ms';
+
+        // Confusion matrix
+        document.getElementById('cm_tn').innerText = data.confusion_matrix.tn.toLocaleString();
+        document.getElementById('cm_fp').innerText = data.confusion_matrix.fp.toLocaleString();
+        document.getElementById('cm_fn').innerText = data.confusion_matrix.fn.toLocaleString();
+        document.getElementById('cm_tp').innerText = data.confusion_matrix.tp.toLocaleString();
+
+        // Diagnosis alert banner
+        const diagBanner = document.getElementById('diagBanner');
+        const diagIcon = document.getElementById('diagIcon');
+        const diagTitle = document.getElementById('diagTitle');
+        const diagText = document.getElementById('diagText');
+
+        diagBanner.className = 'diagnosis-banner ' + data.diag_class;
+        if (data.diag_class === 'danger') {
+          diagIcon.innerText = '🚨';
+          diagTitle.innerText = 'Overfitting Detected';
+        } else if (data.diag_class === 'warning') {
+          diagIcon.innerText = '⚠️';
+          diagTitle.innerText = 'Underfitting Detected';
+        } else {
+          diagIcon.innerText = '✅';
+          diagTitle.innerText = 'Optimal Generalization';
+        }
+        diagText.innerText = data.diagnosis;
+      }
+    } catch (err) {
+      console.error('Tuning error:', err);
+    } finally {
+      btn.innerText = '⚡ Retrain Model with Selected Hyperparameters';
+      btn.disabled = false;
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    runTuneTraining();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}EDA Analytics — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Exploratory Data Analysis{% endblock %}
+{% block page_title %}Student Demographic & Academic EDA{% endblock %}
+
+{% block content %}
+<div class="metric-grid">
+  <div class="metric-card">
+    <span class="metric-label">Cohort Size</span>
+    <strong class="metric-value">{{ '{:,}'.format(eda.total_students) }}</strong>
+    <span class="metric-sub">Active Students in {{ selected_module }}</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Completion Pass Rate</span>
+    <strong class="metric-value text-success">{{ eda.pass_rate }}%</strong>
+    <span class="metric-sub">Pass or Distinction</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-label">Average Score</span>
+    <strong class="metric-value text-primary">{{ eda.mean_score }}%</strong>
+    <span class="metric-sub">Median: {{ eda.median_score }}%</span>
+  </div>
+</div>
+
+<div class="panel-grid" style="margin-bottom: 24px;">
+  <!-- Course Outcome Breakdown -->
+  <div class="panel-card">
+    <h3>Academic Outcome Breakdown</h3>
+    <p>Student distribution across OULAD result categories:</p>
+    <dl class="stat-list">
+      {% for out, cnt in eda.outcome_counts.items() %}
+      <div>
+        <dt>{{ out }}</dt>
+        <dd>
+          <strong>{{ '{:,}'.format(cnt) }}</strong> 
+          <span class="text-muted">({{ '%.1f'|format(cnt / eda.total_students * 100) }}%)</span>
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+
+  <!-- Pass Rates by Prior Education -->
+  <div class="panel-card">
+    <h3>Pass Rate by Prior Education Level</h3>
+    <p>Academic success correlation with qualification level:</p>
+    <div class="progress-list">
+      {% for item in eda.edu_stats %}
+      <div class="progress-item">
+        <div class="progress-label">
+          <span>{{ item.education }} ({{ '{:,}'.format(item.count) }})</span>
+          <strong>{{ item.pass_rate }}% Pass · Avg: {{ item.avg_score }}%</strong>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: {{ item.pass_rate }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Age Bracket Stats -->
+<div class="panel-card">
+  <h3>Pass Rates by Age Bracket</h3>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Age Bracket</th>
+          <th>Student Count</th>
+          <th>Pass Rate (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in eda.age_stats %}
+        <tr>
+          <td><strong>{{ item.age }} Years</strong></td>
+          <td>{{ '{:,}'.format(item.count) }}</td>
+          <td>
+            <div class="progress-bar" style="width: 200px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+              <div class="progress-fill" style="width: {{ item.pass_rate }}%"></div>
+            </div>
+            <strong>{{ item.pass_rate }}%</strong>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

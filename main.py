@@ -287,6 +287,27 @@ def get_preprocessing_info(df):
     }
 
 
+def get_preprocessed_dataframe(df):
+    """
+    Returns cleaned, leak-free DataFrame with imputed values,
+    ready for student download as a preprocessed CSV.
+    """
+    num_cols = ["studied_credits", "num_of_prev_attempts", "assessments_submitted", "registration_lead_time"]
+    num_cols = [c for c in num_cols if c in df.columns]
+    cat_cols = ["code_module", "gender", "highest_education", "imd_band", "age_band", "disability"]
+    cat_cols = [c for c in cat_cols if c in df.columns]
+
+    target_cols = [c for c in ["target_pass", "avg_assessment_score", "final_result"] if c in df.columns]
+    cols_to_keep = ([ "id_student" ] if "id_student" in df.columns else []) + num_cols + cat_cols + target_cols
+    
+    clean_df = df[cols_to_keep].copy()
+    for col in num_cols:
+        clean_df[col] = clean_df[col].fillna(clean_df[col].median())
+    for col in cat_cols:
+        clean_df[col] = clean_df[col].fillna("Unknown")
+    return clean_df
+
+
 def get_eda_info(df):
     """Exploratory Data Analysis insights, pass rates, and demographic distributions."""
     outcome_counts = df["final_result"].value_counts().to_dict()
@@ -519,16 +540,23 @@ CLASSIFICATION_REGISTRY = {
 }
 
 
-def run_single_classification_model(df, model_key="lr"):
-    """Train and evaluate a single requested classification model on demand."""
+MODEL_CACHE = {}
+
+
+def run_single_classification_model(df, model_key="lr", test_size=0.2, force_retrain=False):
+    """Train and evaluate a single requested classification model on demand with in-memory caching."""
     if model_key not in CLASSIFICATION_REGISTRY:
         model_key = "lr"
+
+    cache_key = ("cls", len(df), model_key, round(float(test_size), 2))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
 
     info = CLASSIFICATION_REGISTRY[model_key]
     X, y_cls, _, num_feats, cat_feats = prepare_features(df)
     
     Xc_tr, Xc_te, yc_tr, yc_te = train_test_split(
-        X, y_cls, test_size=0.2, random_state=42, stratify=y_cls
+        X, y_cls, test_size=test_size, random_state=42, stratify=y_cls
     )
 
     estimator = info["constructor"]()
@@ -570,7 +598,7 @@ def run_single_classification_model(df, model_key="lr"):
         except Exception:
             tree_rules = None
 
-    return {
+    res = {
         "key": model_key,
         "name": info["name"],
         "desc": info["desc"],
@@ -588,6 +616,8 @@ def run_single_classification_model(df, model_key="lr"):
         "tree_rules": tree_rules,
         "pipeline": pipeline
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
 # ─────────────────────────────────────────────────────────────
@@ -673,16 +703,20 @@ REGRESSION_REGISTRY = {
 }
 
 
-def run_single_regression_model(df, model_key="mlr"):
-    """Train and evaluate a single requested regression model on demand."""
+def run_single_regression_model(df, model_key="mlr", test_size=0.2, force_retrain=False):
+    """Train and evaluate a single requested regression model on demand with in-memory caching."""
     if model_key not in REGRESSION_REGISTRY:
         model_key = "mlr"
+
+    cache_key = ("reg", len(df), model_key, round(float(test_size), 2))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
 
     info = REGRESSION_REGISTRY[model_key]
     X, _, y_reg, num_feats, cat_feats = prepare_features(df)
 
     Xr_tr, Xr_te, yr_tr, yr_te = train_test_split(
-        X, y_reg, test_size=0.2, random_state=42
+        X, y_reg, test_size=test_size, random_state=42
     )
 
     estimator = info["constructor"]()
@@ -723,7 +757,7 @@ def run_single_regression_model(df, model_key="mlr"):
         except Exception:
             top_coefficients = []
 
-    return {
+    res = {
         "key": model_key,
         "name": info["name"],
         "desc": info["desc"],
@@ -738,10 +772,16 @@ def run_single_regression_model(df, model_key="mlr"):
         "top_coefficients": top_coefficients,
         "pipeline": pipeline
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
-def run_all_models_summary(df):
-    """Run lightweight evaluation across all 12 classification and 12 regression models."""
+def run_all_models_summary(df, force_retrain=False):
+    """Run lightweight evaluation across all 12 classification and 12 regression models with caching."""
+    cache_key = ("all_models_summary", len(df))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     cls_summary = []
     for k in CLASSIFICATION_REGISTRY.keys():
         res = run_single_classification_model(df, k)
@@ -752,7 +792,9 @@ def run_all_models_summary(df):
         res = run_single_regression_model(df, k)
         reg_summary.append(res)
 
-    return cls_summary, reg_summary
+    result = (cls_summary, reg_summary)
+    MODEL_CACHE[cache_key] = result
+    return result
 
 
 # ─────────────────────────────────────────────────────────────
@@ -896,7 +938,11 @@ def predict_student_batch(reg_pipeline, clf_pipeline, student_records):
 # 6. EXPANDED UNSUPERVISED LEARNING SUITE (K-Means, Hierarchical, DBSCAN, PCA, t-SNE, UMAP)
 # ─────────────────────────────────────────────────────────────
 
-def run_unsupervised_kmeans(df, n_clusters=3):
+def run_unsupervised_kmeans(df, n_clusters=3, force_retrain=False):
+    cache_key = ("kmeans", len(df), n_clusters)
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
     cluster_features = [c for c in ["avg_assessment_score", "assessments_submitted", "studied_credits", "num_of_prev_attempts", "registration_lead_time"] if c in numeric.columns]
     
@@ -951,7 +997,7 @@ def run_unsupervised_kmeans(df, n_clusters=3):
             "avg_attempts": round(float(c_grp["num_of_prev_attempts"].mean()), 2) if "num_of_prev_attempts" in c_grp else 0,
         })
 
-    return {
+    res = {
         "k": n_clusters,
         "k_range": k_range,
         "elbow_inertias": elbow_inertias,
@@ -961,12 +1007,18 @@ def run_unsupervised_kmeans(df, n_clusters=3):
         "fit_time_ms": fit_time,
         "features_used": cluster_features,
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
-def run_unsupervised_hierarchical(df, n_clusters=3, linkage_method="ward"):
+def run_unsupervised_hierarchical(df, n_clusters=3, linkage_method="ward", force_retrain=False):
     """
     Hierarchical (Agglomerative) Clustering with Dendrogram tree visualization.
     """
+    cache_key = ("hierarchical", len(df), n_clusters, linkage_method)
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
     cluster_features = [c for c in ["avg_assessment_score", "assessments_submitted", "studied_credits", "num_of_prev_attempts", "registration_lead_time"] if c in numeric.columns]
     
@@ -1030,7 +1082,7 @@ def run_unsupervised_hierarchical(df, n_clusters=3, linkage_method="ward"):
             "avg_attempts": round(float(c_grp["num_of_prev_attempts"].mean()), 2) if "num_of_prev_attempts" in c_grp else 0,
         })
 
-    return {
+    res = {
         "k": n_clusters,
         "linkage": linkage_method,
         "silhouette_score": sil,
@@ -1040,13 +1092,19 @@ def run_unsupervised_hierarchical(df, n_clusters=3, linkage_method="ward"):
         "profiles": profiles,
         "features_used": cluster_features,
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
-def run_unsupervised_dbscan(df, eps=0.6, min_samples=5):
+def run_unsupervised_dbscan(df, eps=0.6, min_samples=5, force_retrain=False):
     """
     DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
     Identifies high-density student clusters and flags isolated anomaly/noise students.
     """
+    cache_key = ("dbscan", len(df), float(eps), int(min_samples))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
     cluster_features = [c for c in ["avg_assessment_score", "assessments_submitted", "studied_credits", "num_of_prev_attempts", "registration_lead_time"] if c in numeric.columns]
     
@@ -1108,7 +1166,7 @@ def run_unsupervised_dbscan(df, eps=0.6, min_samples=5):
         "normal_avg_assessments": round(float(normal_grp["assessments_submitted"].mean()), 1) if len(normal_grp) else 0,
     }
 
-    return {
+    res = {
         "eps": eps,
         "min_samples": min_samples,
         "n_clusters": n_clusters,
@@ -1120,13 +1178,19 @@ def run_unsupervised_dbscan(df, eps=0.6, min_samples=5):
         "anomaly_stats": anomaly_stats,
         "features_used": cluster_features,
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
-def run_unsupervised_tsne(df, perplexity=30, n_iter=1000):
+def run_unsupervised_tsne(df, perplexity=30, n_iter=1000, force_retrain=False):
     """
     t-Distributed Stochastic Neighbor Embedding (t-SNE)
     Non-linear manifold decomposition preserving local student neighborhoods.
     """
+    cache_key = ("tsne", len(df), int(perplexity), int(n_iter))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
     tsne_features = [c for c in ["avg_assessment_score", "assessments_submitted", "studied_credits", "num_of_prev_attempts", "registration_lead_time"] if c in numeric.columns]
     
@@ -1156,20 +1220,26 @@ def run_unsupervised_tsne(df, perplexity=30, n_iter=1000):
     cbar.set_ticklabels(["At-Risk / Fail", "Pass / Distinction"])
     tsne_plot_b64 = plot_to_base64(fig)
 
-    return {
+    res = {
         "perplexity": perp,
         "n_samples": len(clean_data),
         "fit_time_ms": fit_time,
         "tsne_plot": tsne_plot_b64,
         "features": tsne_features,
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
-def run_unsupervised_umap(df, n_neighbors=15, min_dist=0.1):
+def run_unsupervised_umap(df, n_neighbors=15, min_dist=0.1, force_retrain=False):
     """
     Uniform Manifold Approximation and Projection (UMAP)
     Preserves both local and global topological structure across student learning trajectories.
     """
+    cache_key = ("umap", len(df), int(n_neighbors), float(min_dist))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
     umap_features = [c for c in ["avg_assessment_score", "assessments_submitted", "studied_credits", "num_of_prev_attempts", "registration_lead_time"] if c in numeric.columns]
     
@@ -1205,7 +1275,7 @@ def run_unsupervised_umap(df, n_neighbors=15, min_dist=0.1):
     cbar.set_label("Average Assessment Grade (%)")
     umap_plot_b64 = plot_to_base64(fig)
 
-    return {
+    res = {
         "n_neighbors": n_neighbors,
         "min_dist": min_dist,
         "is_fallback": is_fallback,
@@ -1214,9 +1284,15 @@ def run_unsupervised_umap(df, n_neighbors=15, min_dist=0.1):
         "umap_plot": umap_plot_b64,
         "features": umap_features,
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
-def run_unsupervised_pca(df, n_components=4):
+def run_unsupervised_pca(df, n_components=4, force_retrain=False):
+    cache_key = ("pca", len(df), int(n_components))
+    if not force_retrain and cache_key in MODEL_CACHE:
+        return MODEL_CACHE[cache_key]
+
     numeric = df.select_dtypes(include=["number"]).dropna(axis=1, how="all")
     pca_features = [c for c in ["avg_assessment_score", "assessments_submitted", "studied_credits", "num_of_prev_attempts", "registration_lead_time"] if c in numeric.columns]
     
@@ -1244,7 +1320,7 @@ def run_unsupervised_pca(df, n_components=4):
     ax.grid(True, linestyle="--", alpha=0.3)
     pca_plot_b64 = plot_to_base64(fig)
 
-    return {
+    res = {
         "n_components": pca.n_components_,
         "explained_variance": variance_ratios,
         "cumulative_variance": cumulative_variance,
@@ -1252,6 +1328,8 @@ def run_unsupervised_pca(df, n_components=4):
         "pca_plot": pca_plot_b64,
         "features": pca_features,
     }
+    MODEL_CACHE[cache_key] = res
+    return res
 
 
 # ─────────────────────────────────────────────────────────────

@@ -31,8 +31,9 @@ try:
 except Exception:
     pass
 
+import io
 import pandas as pd
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, Response, jsonify, render_template, request
 
 from main import (
     CLASSIFICATION_REGISTRY,
@@ -41,6 +42,7 @@ from main import (
     get_available_modules,
     get_dataset_info,
     get_eda_info,
+    get_preprocessed_dataframe,
     get_preprocessing_info,
     load_and_merge_oulad,
     predict_student_batch,
@@ -139,15 +141,18 @@ def supervised_page():
 
     model_type = request.args.get("type", "classification")
     selected_model = request.args.get("model", "lr" if model_type == "classification" else "mlr")
+    should_run = request.args.get("run", "0") == "1"
 
-    if model_type == "classification":
-        if selected_model not in CLASSIFICATION_REGISTRY:
-            selected_model = "lr"
-        model_result = run_single_classification_model(df, selected_model)
-    else:
-        if selected_model not in REGRESSION_REGISTRY:
-            selected_model = "mlr"
-        model_result = run_single_regression_model(df, selected_model)
+    model_result = None
+    if should_run:
+        if model_type == "classification":
+            if selected_model not in CLASSIFICATION_REGISTRY:
+                selected_model = "lr"
+            model_result = run_single_classification_model(df, selected_model)
+        else:
+            if selected_model not in REGRESSION_REGISTRY:
+                selected_model = "mlr"
+            model_result = run_single_regression_model(df, selected_model)
 
     return render_template(
         "models.html",
@@ -157,6 +162,33 @@ def supervised_page():
         classification_models=CLASSIFICATION_REGISTRY,
         regression_models=REGRESSION_REGISTRY,
     )
+
+
+@app.route("/api/run-supervised", methods=["POST"])
+def api_run_supervised():
+    """Dynamically train and evaluate a single requested supervised algorithm."""
+    try:
+        data = request.get_json(force=True) or request.form.to_dict()
+        module_id = data.get("module", "ALL")
+        df = get_cached_dataset(module_id)
+
+        model_type = data.get("type", "classification")
+        model_key = data.get("model", "lr" if model_type == "classification" else "mlr")
+        test_size = float(data.get("test_size", 0.2))
+
+        if model_type == "classification":
+            if model_key not in CLASSIFICATION_REGISTRY:
+                model_key = "lr"
+            res = run_single_classification_model(df, model_key, test_size=test_size, force_retrain=True)
+        else:
+            if model_key not in REGRESSION_REGISTRY:
+                model_key = "mlr"
+            res = run_single_regression_model(df, model_key, test_size=test_size, force_retrain=True)
+
+        clean_res = {k: v for k, v in res.items() if k != "pipeline"}
+        return jsonify({"status": "success", "result": clean_res})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 
 # ─────────────────────────────────────────────────────────────
@@ -176,7 +208,7 @@ def api_simulate():
         df = get_cached_dataset(module_id)
 
         clf_res = run_single_classification_model(df, "lightgbm")
-        reg_res = run_single_regression_model(df, "lgbm_reg")
+        reg_res = run_single_regression_model(df, "gb_reg")
 
         base_input = {
             "code_module": str(data.get("code_module", "BBB")),
@@ -261,10 +293,28 @@ def api_batch_predict():
             records = df.sample(min(15, len(df)), random_state=42).to_dict(orient="records")
 
         clf_res = run_single_classification_model(df, "lightgbm")
-        reg_res = run_single_regression_model(df, "lgbm_reg")
+        reg_res = run_single_regression_model(df, "gb_reg")
 
         results = predict_student_batch(reg_res["pipeline"], clf_res["pipeline"], records)
         return jsonify({"status": "success", "results": results, "total": len(results)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@app.route("/api/export-preprocessed")
+def export_preprocessed():
+    """Stream cleaned, preprocessed OULAD dataset as a CSV attachment."""
+    try:
+        module_id = request.args.get("module", "ALL")
+        df = get_cached_dataset(module_id)
+        clean_df = get_preprocessed_dataframe(df)
+        csv_buffer = io.StringIO()
+        clean_df.to_csv(csv_buffer, index=False)
+        return Response(
+            csv_buffer.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=oulad_preprocessed_{module_id}.csv"}
+        )
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
@@ -286,13 +336,28 @@ def unsupervised_page():
     min_samples = int(request.args.get("min_samples", 5))
     perplexity = int(request.args.get("perplexity", 30))
     linkage_method = request.args.get("linkage", "ward")
+    should_run = request.args.get("run", "0") == "1"
 
-    kmeans_res = run_unsupervised_kmeans(df, n_clusters=k)
-    hierarchical_res = run_unsupervised_hierarchical(df, n_clusters=k, linkage_method=linkage_method)
-    dbscan_res = run_unsupervised_dbscan(df, eps=eps, min_samples=min_samples)
-    pca_res = run_unsupervised_pca(df, n_components=4)
-    tsne_res = run_unsupervised_tsne(df, perplexity=perplexity)
-    umap_res = run_unsupervised_umap(df)
+    kmeans_res = None
+    hierarchical_res = None
+    dbscan_res = None
+    pca_res = None
+    tsne_res = None
+    umap_res = None
+
+    if should_run:
+        if tab == "kmeans":
+            kmeans_res = run_unsupervised_kmeans(df, n_clusters=k)
+        elif tab == "hierarchical":
+            hierarchical_res = run_unsupervised_hierarchical(df, n_clusters=k, linkage_method=linkage_method)
+        elif tab == "dbscan":
+            dbscan_res = run_unsupervised_dbscan(df, eps=eps, min_samples=min_samples)
+        elif tab == "pca":
+            pca_res = run_unsupervised_pca(df, n_components=4)
+        elif tab == "tsne":
+            tsne_res = run_unsupervised_tsne(df, perplexity=perplexity)
+        elif tab == "umap":
+            umap_res = run_unsupervised_umap(df)
 
     return render_template(
         "unsupervised.html",
@@ -311,6 +376,47 @@ def unsupervised_page():
     )
 
 
+@app.route("/api/run-unsupervised", methods=["POST"])
+def api_run_unsupervised():
+    """Dynamically run only the requested unsupervised clustering or manifold algorithm."""
+    try:
+        data = request.get_json(force=True) or request.form.to_dict()
+        module_id = data.get("module", "ALL")
+        df = get_cached_dataset(module_id)
+        algo = data.get("algorithm", "kmeans")
+
+        if algo == "kmeans":
+            k = int(data.get("k", 3))
+            if k not in [2, 3, 4, 5, 6]:
+                k = 3
+            res = run_unsupervised_kmeans(df, n_clusters=k, force_retrain=True)
+        elif algo == "hierarchical":
+            k = int(data.get("k", 3))
+            linkage_m = str(data.get("linkage", "ward"))
+            res = run_unsupervised_hierarchical(df, n_clusters=k, linkage_method=linkage_m, force_retrain=True)
+        elif algo == "dbscan":
+            eps = float(data.get("eps", 0.6))
+            min_samples = int(data.get("min_samples", 5))
+            res = run_unsupervised_dbscan(df, eps=eps, min_samples=min_samples, force_retrain=True)
+        elif algo == "pca":
+            n_comp = int(data.get("n_components", 4))
+            res = run_unsupervised_pca(df, n_components=n_comp, force_retrain=True)
+        elif algo == "tsne":
+            perplexity = int(data.get("perplexity", 30))
+            n_iter = int(data.get("n_iter", 500))
+            res = run_unsupervised_tsne(df, perplexity=perplexity, n_iter=n_iter, force_retrain=True)
+        elif algo == "umap":
+            n_neighbors = int(data.get("n_neighbors", 15))
+            min_dist = float(data.get("min_dist", 0.1))
+            res = run_unsupervised_umap(df, n_neighbors=n_neighbors, min_dist=min_dist, force_retrain=True)
+        else:
+            return jsonify({"status": "error", "message": f"Unknown unsupervised algorithm: {algo}"}), 400
+
+        return jsonify({"status": "success", "algorithm": algo, "result": res})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
 @app.route("/predict", methods=["GET", "POST"])
 def predict_page():
     return render_template("predict.html")
@@ -325,7 +431,7 @@ def api_predict():
         df = get_cached_dataset(module_id)
 
         clf_res = run_single_classification_model(df, "lightgbm")
-        reg_res = run_single_regression_model(df, "lgbm_reg")
+        reg_res = run_single_regression_model(df, "gb_reg")
 
         input_dict = {
             "code_module": str(data.get("code_module", "BBB")),

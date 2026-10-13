@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}Supervised Learning — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Supervised Machine Learning Suite{% endblock %}
+{% block page_title %}Supervised Model Execution & Evaluation{% endblock %}
+
+{% block content %}
+<!-- Paradigm Banner & Mode Switcher -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">🤖 Supervised Learning Suite (24 Models)</div>
+    <h2>Classification & Regression Model Execution Studio</h2>
+    <p>
+      Select any algorithm and test split ratio below, then click <strong>Run Algorithm</strong> to execute it dynamically on the Open University Learning Analytics Dataset.
+    </p>
+  </div>
+  <div class="hero-actions">
+    <a href="/supervised?type=classification{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="btn-hero {% if model_type == 'classification' %}primary{% else %}secondary{% endif %}">
+      🏷️ Classification (12 Models)
+    </a>
+    <a href="/supervised?type=regression{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="btn-hero {% if model_type == 'regression' %}primary{% else %}secondary{% endif %}">
+      📉 Regression (12 Models)
+    </a>
+  </div>
+</div>
+
+<!-- Model Selection Grid / Tabs -->
+<div class="panel-card" style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+    <h3>Select Algorithm to Run on Dataset:</h3>
+    <span class="badge primary">Active Paradigm: {{ model_type|capitalize }} (12 Available)</span>
+  </div>
+
+  <div class="model-tab-grid" style="margin-top: 14px;">
+    {% if model_type == 'classification' %}
+      {% for k, m in classification_models.items() %}
+      <a href="javascript:void(0)" 
+         onclick="selectAlgorithm('{{ k }}', '{{ m.name }}', '{{ m.type }}', '{{ m.desc }}')"
+         id="tab-{{ k }}"
+         class="model-tab {% if selected_model == k %}active{% endif %}">
+        <span class="tab-type">{{ m.type }}</span>
+        <strong class="tab-name">{{ m.name }}</strong>
+      </a>
+      {% endfor %}
+    {% else %}
+      {% for k, m in regression_models.items() %}
+      <a href="javascript:void(0)" 
+         onclick="selectAlgorithm('{{ k }}', '{{ m.name }}', '{{ m.type }}', '{{ m.desc }}')"
+         id="tab-{{ k }}"
+         class="model-tab {% if selected_model == k %}active{% endif %}">
+        <span class="tab-type">{{ m.type }}</span>
+        <strong class="tab-name">{{ m.name }}</strong>
+      </a>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- Interactive Execution & Control Console -->
+<div class="panel-card" style="margin-bottom: 24px; border-top: 4px solid var(--primary); background: linear-gradient(180deg, var(--surface) 0%, var(--surface-alt) 100%);">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <span class="badge primary" id="activeModelType">
+        {% if model_type == 'classification' %}{{ classification_models[selected_model].type }}{% else %}{{ regression_models[selected_model].type }}{% endif %}
+      </span>
+      <h2 style="margin-top: 6px;" id="activeModelName">
+        {% if model_type == 'classification' %}{{ classification_models[selected_model].name }}{% else %}{{ regression_models[selected_model].name }}{% endif %}
+      </h2>
+      <p class="text-secondary" style="margin-top: 4px; max-width: 700px;" id="activeModelDesc">
+        {% if model_type == 'classification' %}{{ classification_models[selected_model].desc }}{% else %}{{ regression_models[selected_model].desc }}{% endif %}
+      </p>
+    </div>
+
+    <!-- Parameter & Run Controls -->
+    <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label for="testSplitSelect" style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary);">Test Split Ratio</label>
+        <select id="testSplitSelect" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 9px 12px; border-radius: var(--radius-sm); font-size: 0.88rem; outline: none; cursor: pointer;">
+          <option value="0.2" selected>20% Holdout Split (Standard)</option>
+          <option value="0.25">25% Holdout Split</option>
+          <option value="0.3">30% Holdout Split</option>
+          <option value="0.15">15% Holdout Split</option>
+        </select>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 4px; align-self: flex-end;">
+        <button id="runSupervisedBtn" onclick="executeSupervisedModel()" class="btn-primary" style="padding: 10px 24px; font-size: 0.95rem; border-radius: var(--radius-sm);">
+          ⚡ Execute Algorithm on Dataset
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Active Model Output Panel / Dynamic Results Area -->
+<div id="resultsCard" class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--primary); min-height: 240px;">
+  
+  <!-- INITIAL PLACEHOLDER: Rendered when model hasn't been run yet -->
+  <div id="placeholderState" style="text-align: center; padding: 48px 20px; {% if model_result %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">⚡</div>
+    <h3 style="margin-bottom: 8px;">Algorithm Ready for Dynamic Execution</h3>
+    <p style="color: var(--text-secondary); max-width: 580px; margin: 0 auto 20px; font-size: 0.92rem; line-height: 1.5;">
+      The page loaded instantly without blocking the server. Select your desired test split above and click 
+      <strong>"⚡ Execute Algorithm on Dataset"</strong> to train this model on OULAD records and compute metrics in real time.
+    </p>
+    <button onclick="executeSupervisedModel()" class="btn-hero primary" style="display: inline-flex; align-items: center; gap: 8px;">
+      ▶️ Run Now on OULAD Dataset
+    </button>
+  </div>
+
+  <!-- RUNNING SPINNER STATE -->
+  <div id="loadingState" style="display: none; text-align: center; padding: 60px 20px;">
+    <div class="pulse-dot" style="width: 18px; height: 18px; margin: 0 auto 16px; background: var(--primary);"></div>
+    <h3 style="margin-bottom: 8px;">Training <span id="loadingModelName"></span> on OULAD Dataset...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">
+      Executing training pipeline, cross-imputing features, and computing validation metrics. Please wait a moment...
+    </p>
+  </div>
+
+  <!-- POPULATED RESULTS STATE -->
+  <div id="populatedState" {% if not model_result %}style="display: none;"{% endif %}>
+    <div class="model-header-row">
+      <div>
+        <span class="badge primary" id="resBadge">{{ model_result.type if model_result else '' }}</span>
+        <h2 style="margin-top: 6px;" id="resTitle">{{ model_result.name if model_result else '' }}</h2>
+        <p class="text-secondary" style="margin-top: 4px;" id="resDesc">{{ model_result.desc if model_result else '' }}</p>
+      </div>
+      <div class="model-stats-box">
+        <div><span>Training Fit Time:</span> <strong id="resFitTime">{{ model_result.fit_time_ms if model_result else '--' }} ms</strong></div>
+        <div><span>Train / Test Split:</span> <strong id="resSplit">{{ model_result.train_samples if model_result else '--' }} / {{ model_result.test_samples if model_result else '--' }}</strong></div>
+      </div>
+    </div>
+
+    <!-- CLASSIFICATION RESULTS -->
+    <div id="classificationResults" {% if model_type != 'classification' %}style="display: none;"{% endif %}>
+      <!-- 6-Metric High Level Ribbon -->
+      <div class="metric-grid-6">
+        <div class="ribbon-card primary">
+          <strong class="ribbon-val" id="resAcc">{{ model_result.acc if model_result else '--' }}%</strong>
+          <span class="ribbon-lbl">Accuracy</span>
+        </div>
+        <div class="ribbon-card success">
+          <strong class="ribbon-val" id="resPrec">{{ model_result.prec if model_result else '--' }}%</strong>
+          <span class="ribbon-lbl">Precision</span>
+        </div>
+        <div class="ribbon-card warning">
+          <strong class="ribbon-val" id="resRec">{{ model_result.rec if model_result else '--' }}%</strong>
+          <span class="ribbon-lbl">Recall</span>
+        </div>
+        <div class="ribbon-card accent">
+          <strong class="ribbon-val" id="resF1">{{ model_result.f1 if model_result else '--' }}%</strong>
+          <span class="ribbon-lbl">F1-Score</span>
+        </div>
+        <div class="ribbon-card info">
+          <strong class="ribbon-val" id="resSpec">{{ model_result.spec if model_result else '--' }}%</strong>
+          <span class="ribbon-lbl">Specificity</span>
+        </div>
+        <div class="ribbon-card purple">
+          <strong class="ribbon-val" id="resAuc">{{ model_result.auc if model_result else '--' }}%</strong>
+          <span class="ribbon-lbl">AUC-ROC</span>
+        </div>
+      </div>
+
+      <!-- 4 Confusion Matrix Breakdown Cards -->
+      <h4 style="margin: 24px 0 12px;">Test Set Confusion Matrix (<span id="resCmTotal">{{ model_result.test_samples if model_result else '--' }}</span> Hold-Out Evaluation Samples)</h4>
+      <div class="cm-grid">
+        <div class="cm-cell correct">
+          <div class="cm-header">
+            <strong id="resTn">{{ '{:,}'.format(model_result.tn) if model_result and model_result.tn is defined else '0' }}</strong>
+            <span class="cm-icon">✅</span>
+          </div>
+          <span class="cm-title">TN — True Negative</span>
+          <p class="cm-desc">Correctly predicted <strong>Fail / Dropout</strong></p>
+        </div>
+
+        <div class="cm-cell error">
+          <div class="cm-header">
+            <strong id="resFp">{{ '{:,}'.format(model_result.fp) if model_result and model_result.fp is defined else '0' }}</strong>
+            <span class="cm-icon">❌</span>
+          </div>
+          <span class="cm-title">FP — False Positive (Type I Error)</span>
+          <p class="cm-desc">Predicted Pass → actually <strong>Failed / Withdrew</strong></p>
+        </div>
+
+        <div class="cm-cell error">
+          <div class="cm-header">
+            <strong id="resFn">{{ '{:,}'.format(model_result.fn) if model_result and model_result.fn is defined else '0' }}</strong>
+            <span class="cm-icon">⚠️</span>
+          </div>
+          <span class="cm-title">FN — False Negative (Type II Error)</span>
+          <p class="cm-desc">Predicted Fail → actually <strong>Passed Course</strong></p>
+        </div>
+
+        <div class="cm-cell correct">
+          <div class="cm-header">
+            <strong id="resTp">{{ '{:,}'.format(model_result.tp) if model_result and model_result.tp is defined else '0' }}</strong>
+            <span class="cm-icon">🎯</span>
+          </div>
+          <span class="cm-title">TP — True Positive</span>
+          <p class="cm-desc">Correctly predicted <strong>Pass / Distinction</strong></p>
+        </div>
+      </div>
+
+      <!-- Tree Structure Text Preview if Available -->
+      <div id="treeRulesSection" style="margin-top: 24px; {% if not (model_result and model_result.tree_rules) %}display: none;{% endif %}">
+        <h4>Decision Tree Rule Logic (Top Splitting Rules)</h4>
+        <pre class="tree-code" id="resTreeRules">{{ model_result.tree_rules if model_result and model_result.tree_rules else '' }}</pre>
+      </div>
+    </div>
+
+    <!-- REGRESSION RESULTS -->
+    <div id="regressionResults" {% if model_type != 'regression' %}style="display: none;"{% endif %}>
+      <!-- 4-Metric High Level Ribbon -->
+      <div class="metric-grid" style="margin-top: 14px;">
+        <div class="metric-card">
+          <span class="metric-label">R² Score (Variance Explained)</span>
+          <strong class="metric-value text-primary" id="resR2">{{ model_result.r2 if model_result else '--' }}</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Mean Squared Error (MSE)</span>
+          <strong class="metric-value" id="resMse">{{ model_result.mse if model_result else '--' }}</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Root Mean Squared Error (RMSE)</span>
+          <strong class="metric-value text-warning" id="resRmse">{{ model_result.rmse if model_result else '--' }}%</strong>
+          <span class="metric-sub">Average error in predicted grade</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">Mean Absolute Error (MAE)</span>
+          <strong class="metric-value text-success" id="resMae">{{ model_result.mae if model_result else '--' }}%</strong>
+          <span class="metric-sub">Mean absolute deviation</span>
+        </div>
+      </div>
+
+      <!-- Top Feature Coefficients if Available -->
+      <div id="coefficientsSection" style="margin-top: 24px; {% if not (model_result and model_result.top_coefficients) %}display: none;{% endif %}">
+        <h4>Primary Grade Impact Weights (Standardized Feature Coefficients)</h4>
+        <div class="feature-grid" id="resCoeffGrid">
+          {% if model_result and model_result.top_coefficients %}
+            {% for item in model_result.top_coefficients %}
+            <div class="feature-card">
+              <span class="feature-name">{{ item.feature }}</span>
+              <span class="feature-val {% if item.impact >= 0 %}positive{% else %}negative{% endif %}">
+                {% if item.impact >= 0 %}+{% endif %}{{ '%.2f'|format(item.impact) }}%
+              </span>
+            </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentModelType = '{{ model_type }}';
+  let currentSelectedModel = '{{ selected_model }}';
+  const selectedModule = '{{ selected_module }}';
+
+  function selectAlgorithm(key, name, type, desc) {
+    currentSelectedModel = key;
+
+    // Update active tab styling
+    document.querySelectorAll('.model-tab').forEach(el => el.classList.remove('active'));
+    const activeEl = document.getElementById('tab-' + key);
+    if (activeEl) activeEl.classList.add('active');
+
+    // Update Control Console Header
+    document.getElementById('activeModelType').innerText = type;
+    document.getElementById('activeModelName').innerText = name;
+    document.getElementById('activeModelDesc').innerText = desc;
+  }
+
+  async function executeSupervisedModel() {
+    const runBtn = document.getElementById('runSupervisedBtn');
+    const placeholderState = document.getElementById('placeholderState');
+    const loadingState = document.getElementById('loadingState');
+    const populatedState = document.getElementById('populatedState');
+    const testSplit = document.getElementById('testSplitSelect').value;
+
+    const activeModelName = document.getElementById('activeModelName').innerText;
+    document.getElementById('loadingModelName').innerText = activeModelName;
+
+    // Switch to loading state
+    placeholderState.style.display = 'none';
+    populatedState.style.display = 'none';
+    loadingState.style.display = 'block';
+    runBtn.disabled = true;
+    runBtn.innerText = '⏳ Training Model on OULAD...';
+
+    try {
+      const response = await fetch('/api/run-supervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: currentModelType,
+          model: currentSelectedModel,
+          test_size: parseFloat(testSplit),
+          module: selectedModule
+        })
+      });
+
+      const resData = await response.json();
+      if (resData.status !== 'success') {
+        alert('Execution Error: ' + (resData.message || 'Failed to train model'));
+        loadingState.style.display = 'none';
+        placeholderState.style.display = 'block';
+        return;
+      }
+
+      const m = resData.result;
+
+      // Update Header & Stats
+      document.getElementById('resBadge').innerText = m.type;
+      document.getElementById('resTitle').innerText = m.name;
+      document.getElementById('resDesc').innerText = m.desc;
+      document.getElementById('resFitTime').innerText = m.fit_time_ms + ' ms';
+      document.getElementById('resSplit').innerText = m.train_samples + ' / ' + m.test_samples;
+
+      if (currentModelType === 'classification') {
+        document.getElementById('classificationResults').style.display = 'block';
+        document.getElementById('regressionResults').style.display = 'none';
+
+        document.getElementById('resAcc').innerText = m.acc + '%';
+        document.getElementById('resPrec').innerText = m.prec + '%';
+        document.getElementById('resRec').innerText = m.rec + '%';
+        document.getElementById('resF1').innerText = m.f1 + '%';
+        document.getElementById('resSpec').innerText = m.spec + '%';
+        document.getElementById('resAuc').innerText = (isNaN(m.auc) || m.auc === null ? '--' : m.auc + '%');
+
+        document.getElementById('resCmTotal').innerText = m.test_samples;
+        document.getElementById('resTn').innerText = Number(m.tn).toLocaleString();
+        document.getElementById('resFp').innerText = Number(m.fp).toLocaleString();
+        document.getElementById('resFn').innerText = Number(m.fn).toLocaleString();
+        document.getElementById('resTp').innerText = Number(m.tp).toLocaleString();
+
+        const treeSection = document.getElementById('treeRulesSection');
+        if (m.tree_rules) {
+          treeSection.style.display = 'block';
+          document.getElementById('resTreeRules').innerText = m.tree_rules;
+        } else {
+          treeSection.style.display = 'none';
+        }
+      } else {
+        document.getElementById('classificationResults').style.display = 'none';
+        document.getElementById('regressionResults').style.display = 'block';
+
+        document.getElementById('resR2').innerText = m.r2;
+        document.getElementById('resMse').innerText = m.mse;
+        document.getElementById('resRmse').innerText = m.rmse + '%';
+        document.getElementById('resMae').innerText = m.mae + '%';
+
+        const coeffSection = document.getElementById('coefficientsSection');
+        const coeffGrid = document.getElementById('resCoeffGrid');
+        if (m.top_coefficients && m.top_coefficients.length > 0) {
+          coeffSection.style.display = 'block';
+          coeffGrid.innerHTML = '';
+          m.top_coefficients.forEach(c => {
+            const card = document.createElement('div');
+            card.className = 'feature-card';
+            const sign = c.impact >= 0 ? '+' : '';
+            const valClass = c.impact >= 0 ? 'positive' : 'negative';
+            card.innerHTML = `
+              <span class="feature-name">${c.feature}</span>
+              <span class="feature-val ${valClass}">${sign}${c.impact.toFixed(2)}%</span>
+            `;
+            coeffGrid.appendChild(card);
+          });
+        } else {
+          coeffSection.style.display = 'none';
+        }
+      }
+
+      // Switch to Populated State
+      loadingState.style.display = 'none';
+      populatedState.style.display = 'block';
+
+      // Smooth scroll to results
+      document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } catch (err) {
+      console.error(err);
+      alert('Error communicating with execution server: ' + err.message);
+      loadingState.style.display = 'none';
+      placeholderState.style.display = 'block';
+    } finally {
+      runBtn.disabled = false;
+      runBtn.innerText = '⚡ Execute Algorithm on Dataset';
+    }
+  }
+</script>
+{% endblock %}

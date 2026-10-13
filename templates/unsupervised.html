@@ -1,0 +1,1047 @@
+{% extends "base.html" %}
+{% block title %}Unsupervised & Manifold Learning — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Unsupervised Clustering & Manifold Suite{% endblock %}
+{% block page_title %}Clustering & Dimensionality Reduction Studio (6 Models){% endblock %}
+
+{% block content %}
+<!-- Paradigm Banner & Mode Switcher -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">🔮 Unsupervised Machine Learning Studio (6 Models)</div>
+    <h2>Student Persona Clustering & Non-Linear Manifold Projections</h2>
+    <p>
+      Discover natural student learning personas and explore high-dimensional engagement topologies on demand using 
+      <strong>K-Means, Hierarchical (Agglomerative), DBSCAN, PCA, t-SNE, and UMAP</strong>.
+    </p>
+  </div>
+</div>
+
+<!-- Tab Navigation Ribbon -->
+<div class="panel-card" style="margin-bottom: 24px; padding: 14px 20px;">
+  <div class="unsupervised-nav-tabs">
+    <a href="/unsupervised?tab=kmeans{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="unsup-tab {% if active_tab == 'kmeans' %}active{% endif %}">
+      <span class="tab-icon">🔮</span>
+      <div>
+        <strong>K-Means Clustering</strong>
+        <span class="tab-sub">Centroid Partitions</span>
+      </div>
+    </a>
+
+    <a href="/unsupervised?tab=hierarchical{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="unsup-tab {% if active_tab == 'hierarchical' %}active{% endif %}">
+      <span class="tab-icon">🌳</span>
+      <div>
+        <strong>Hierarchical Clustering</strong>
+        <span class="tab-sub">Agglomerative Tree</span>
+      </div>
+    </a>
+
+    <a href="/unsupervised?tab=dbscan{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="unsup-tab {% if active_tab == 'dbscan' %}active{% endif %}">
+      <span class="tab-icon">📍</span>
+      <div>
+        <strong>DBSCAN Density</strong>
+        <span class="tab-sub">Density & Noise Outliers</span>
+      </div>
+    </a>
+
+    <a href="/unsupervised?tab=pca{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="unsup-tab {% if active_tab == 'pca' %}active{% endif %}">
+      <span class="tab-icon">📐</span>
+      <div>
+        <strong>PCA Projection</strong>
+        <span class="tab-sub">Linear Eigenvectors</span>
+      </div>
+    </a>
+
+    <a href="/unsupervised?tab=tsne{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="unsup-tab {% if active_tab == 'tsne' %}active{% endif %}">
+      <span class="tab-icon">🌌</span>
+      <div>
+        <strong>t-SNE Embedding</strong>
+        <span class="tab-sub">Local Neighborhoods</span>
+      </div>
+    </a>
+
+    <a href="/unsupervised?tab=umap{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" 
+       class="unsup-tab {% if active_tab == 'umap' %}active{% endif %}">
+      <span class="tab-icon">🗺️</span>
+      <div>
+        <strong>UMAP Manifold</strong>
+        <span class="tab-sub">Topological Manifolds</span>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     TAB 1: K-MEANS CLUSTERING
+     ───────────────────────────────────────────────────────────── -->
+{% if active_tab == 'kmeans' %}
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--primary);">
+  <div class="model-header-row">
+    <div>
+      <span class="badge primary">Partitioning Clustering</span>
+      <h2 style="margin-top: 6px;">K-Means Student Clustering</h2>
+      <p class="text-secondary">Iteratively partitions student engagement records into $k$ non-overlapping spherical clusters minimizing within-cluster inertia.</p>
+    </div>
+  </div>
+
+  <!-- Parameter Controls & Run Bar -->
+  <div class="panel-card" style="background: var(--surface-alt); margin: 18px 0; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <label for="kmeans_k" style="font-size: 0.86rem; font-weight: 700;">Number of Clusters (k):</label>
+        <div class="k-selector-box" id="kmeansKBox">
+          {% for k_val in [2, 3, 4, 5, 6] %}
+          <button type="button" onclick="setKMeansK({{ k_val }})" class="k-btn {% if k == k_val %}active{% endif %}" id="btn-k-{{ k_val }}">
+            k = {{ k_val }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      <button onclick="runKMeans()" id="runKmeansBtn" class="btn-primary" style="padding: 10px 22px;">
+        ⚡ Execute K-Means Clustering
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="kmeansLoading" style="display: none; text-align: center; padding: 50px 20px;">
+    <div class="pulse-dot" style="width: 16px; height: 16px; margin: 0 auto 14px; background: var(--primary);"></div>
+    <h3>Computing K-Means Partitions & Silhouette Scores...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">Normalizing student features and iteratively calculating centroid convergence...</p>
+  </div>
+
+  <!-- Placeholder State -->
+  <div id="kmeansPlaceholder" style="text-align: center; padding: 48px 20px; {% if kmeans_res %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">🔮</div>
+    <h3>K-Means Estimator Ready</h3>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 18px; font-size: 0.9rem;">
+      Select the number of clusters $k$ above and click <strong>"⚡ Execute K-Means Clustering"</strong> to train the centroid model dynamically on OULAD.
+    </p>
+    <button onclick="runKMeans()" class="btn-hero primary">▶️ Run K-Means Now</button>
+  </div>
+
+  <!-- Results Content Container -->
+  <div id="kmeansResults" {% if not kmeans_res %}style="display: none;"{% endif %}>
+    <div class="panel-grid" style="margin-top: 16px;">
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>K-Means 2D Cluster Space</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Student records colored by cluster assignment with black centroid markers ($X$):</p>
+        <img id="kmeansPlotImg" src="{% if kmeans_res %}data:image/png;base64,{{ kmeans_res.cluster_plot }}{% endif %}" alt="KMeans Plot" class="responsive-img" />
+      </div>
+
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>Elbow Inertia & Silhouette Validation</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Comparing variance reduction vs cluster separation across $k$ candidate settings:</p>
+        <div class="table-responsive">
+          <table class="data-table" id="kmeansTable">
+            <thead>
+              <tr>
+                <th>Clusters (k)</th>
+                <th>Inertia (Sum of Squares)</th>
+                <th>Silhouette Score</th>
+                <th>Separation Quality</th>
+              </tr>
+            </thead>
+            <tbody id="kmeansTableBody">
+              {% if kmeans_res %}
+                {% for k_val in kmeans_res.k_range %}
+                <tr class="{% if k == k_val %}row-highlight{% endif %}">
+                  <td><strong>k = {{ k_val }}</strong></td>
+                  <td>{{ '{:,.1f}'.format(kmeans_res.elbow_inertias[loop.index0]) }}</td>
+                  <td><strong>{{ kmeans_res.silhouette_scores[loop.index0] }}</strong></td>
+                  <td>
+                    {% if kmeans_res.silhouette_scores[loop.index0] >= 0.28 %}
+                    <span class="badge success">Optimal Separation</span>
+                    {% else %}
+                    <span class="badge warning">Moderate Separation</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <div class="alert-box" style="margin-top: 14px;">
+          <strong>💡 Academic Insight:</strong> Silhouette scores quantify how well-separated student clusters are. Scores closer to $+1.0$ indicate students strongly match their assigned learning archetype.
+        </div>
+      </div>
+    </div>
+
+    <!-- Persona Profiles -->
+    <h3 style="margin: 24px 0 12px;">Identified Student Cluster Personas (<span id="kmeansPersonasHeader">k = {{ k }}</span>)</h3>
+    <div class="card-grid-3" id="kmeansProfilesContainer">
+      {% if kmeans_res %}
+        {% for prof in kmeans_res.profiles %}
+        <div class="persona-card">
+          <div class="persona-header">
+            <span class="persona-tag">Cluster #{{ prof.cluster_id }}</span>
+            <strong>{{ prof.student_count }} students ({{ prof.pct_of_total }}%)</strong>
+          </div>
+          <dl class="stat-list" style="margin-top: 10px;">
+            <div><dt>Avg Assessment Grade:</dt><dd><strong class="text-primary">{{ prof.avg_score }}%</strong></dd></div>
+            <div><dt>Submitted Assessments:</dt><dd>{{ prof.avg_assessments }}</dd></div>
+            <div><dt>Avg Credits Studied:</dt><dd>{{ prof.avg_credits }} cr</dd></div>
+            <div><dt>Prior Retakes:</dt><dd>{{ prof.avg_attempts }}</dd></div>
+          </dl>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─────────────────────────────────────────────────────────────
+     TAB 2: HIERARCHICAL (AGGLOMERATIVE) CLUSTERING
+     ───────────────────────────────────────────────────────────── -->
+{% if active_tab == 'hierarchical' %}
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--accent);">
+  <div class="model-header-row">
+    <div>
+      <span class="badge accent">Hierarchical Agglomerative</span>
+      <h2 style="margin-top: 6px;">Agglomerative Tree Clustering & Dendrogram</h2>
+      <p class="text-secondary">Bottom-up hierarchical clustering recursively merging closest student clusters based on variance dissimilarity.</p>
+    </div>
+  </div>
+
+  <!-- Parameters & Run Bar -->
+  <div class="panel-card" style="background: var(--surface-alt); margin: 18px 0; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-size: 0.86rem; font-weight: 700;">Clusters (k):</label>
+          <div class="k-selector-box" id="hierarchicalKBox">
+            {% for k_val in [2, 3, 4, 5, 6] %}
+            <button type="button" onclick="setHierarchicalK({{ k_val }})" class="k-btn {% if k == k_val %}active{% endif %}" id="btn-hk-{{ k_val }}">
+              k = {{ k_val }}
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label style="font-size: 0.86rem; font-weight: 700;">Linkage:</label>
+          <select id="hierarchicalLinkage" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 0.86rem;">
+            <option value="ward" {% if linkage_method == 'ward' %}selected{% endif %}>Ward (Min Variance)</option>
+            <option value="complete" {% if linkage_method == 'complete' %}selected{% endif %}>Complete (Max Distance)</option>
+            <option value="average" {% if linkage_method == 'average' %}selected{% endif %}>Average</option>
+          </select>
+        </div>
+      </div>
+
+      <button onclick="runHierarchical()" id="runHierarchicalBtn" class="btn-primary" style="padding: 10px 22px;">
+        ⚡ Build Hierarchical Tree & Dendrogram
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="hierarchicalLoading" style="display: none; text-align: center; padding: 50px 20px;">
+    <div class="pulse-dot" style="width: 16px; height: 16px; margin: 0 auto 14px; background: var(--accent);"></div>
+    <h3>Constructing Agglomerative Tree & Dendrogram...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">Pairwise Euclidean distance calculation and linkage linkage dendrogram generation...</p>
+  </div>
+
+  <!-- Placeholder State -->
+  <div id="hierarchicalPlaceholder" style="text-align: center; padding: 48px 20px; {% if hierarchical_res %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">🌳</div>
+    <h3>Hierarchical Model Ready</h3>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 18px; font-size: 0.9rem;">
+      Select cluster depth and linkage metric above and click <strong>"⚡ Build Hierarchical Tree"</strong> to execute dynamically.
+    </p>
+    <button onclick="runHierarchical()" class="btn-hero primary">▶️ Build Agglomerative Tree Now</button>
+  </div>
+
+  <!-- Results Content Container -->
+  <div id="hierarchicalResults" {% if not hierarchical_res %}style="display: none;"{% endif %}>
+    <div class="panel-grid" style="margin-top: 16px;">
+      <!-- Dendrogram Plot -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>Hierarchical Tree Dendrogram</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Dendrogram branching tree illustrating successive student merge stages:</p>
+        <img id="hierarchicalDendroImg" src="{% if hierarchical_res and hierarchical_res.dendrogram_plot %}data:image/png;base64,{{ hierarchical_res.dendrogram_plot }}{% endif %}" alt="Dendrogram Plot" class="responsive-img" />
+      </div>
+
+      <!-- Cluster Space Plot -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>Hierarchical Cluster Space</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Projection of Agglomerative cluster groups in 2D space:</p>
+        <img id="hierarchicalPlotImg" src="{% if hierarchical_res and hierarchical_res.cluster_plot %}data:image/png;base64,{{ hierarchical_res.cluster_plot }}{% endif %}" alt="Hierarchical Plot" class="responsive-img" />
+        <div style="margin-top: 14px; display: flex; justify-content: space-between; font-size: 0.84rem;">
+          <span>Silhouette Separation Score:</span>
+          <strong class="text-success" id="hierarchicalSil">{{ hierarchical_res.silhouette_score if hierarchical_res else '--' }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Persona Profiles -->
+    <h3 style="margin: 24px 0 12px;">Hierarchical Cluster Archetypes</h3>
+    <div class="card-grid-3" id="hierarchicalProfilesContainer">
+      {% if hierarchical_res %}
+        {% for prof in hierarchical_res.profiles %}
+        <div class="persona-card">
+          <div class="persona-header">
+            <span class="persona-tag" style="background: var(--accent-light); color: var(--accent);">Branch #{{ prof.cluster_id }}</span>
+            <strong>{{ prof.student_count }} students ({{ prof.pct_of_total }}%)</strong>
+          </div>
+          <dl class="stat-list" style="margin-top: 10px;">
+            <div><dt>Avg Assessment Grade:</dt><dd><strong class="text-accent">{{ prof.avg_score }}%</strong></dd></div>
+            <div><dt>Submitted Assessments:</dt><dd>{{ prof.avg_assessments }}</dd></div>
+            <div><dt>Avg Credits Studied:</dt><dd>{{ prof.avg_credits }} cr</dd></div>
+            <div><dt>Prior Retakes:</dt><dd>{{ prof.avg_attempts }}</dd></div>
+          </dl>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─────────────────────────────────────────────────────────────
+     TAB 3: DBSCAN DENSITY CLUSTERING
+     ───────────────────────────────────────────────────────────── -->
+{% if active_tab == 'dbscan' %}
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--danger);">
+  <div class="model-header-row">
+    <div>
+      <span class="badge danger">Density-Based Clustering</span>
+      <h2 style="margin-top: 6px;">DBSCAN Clustering & Outlier Anomaly Detection</h2>
+      <p class="text-secondary">Groups densely packed student profiles and separates sparse noise/outlier students without requiring a predefined cluster count $k$.</p>
+    </div>
+    <div class="model-stats-box" id="dbscanStatsBox" style="{% if not dbscan_res %}display: none;{% endif %}">
+      <div><span>Discovered Clusters:</span> <strong id="dbscanClusters">{{ dbscan_res.n_clusters if dbscan_res else '--' }}</strong></div>
+      <div><span>Noise Anomaly Students:</span> <strong class="text-danger" id="dbscanNoise">{{ dbscan_res.n_noise if dbscan_res else '--' }} ({{ dbscan_res.noise_pct if dbscan_res else '--' }}%)</strong></div>
+    </div>
+  </div>
+
+  <!-- DBSCAN Parameters Ribbon -->
+  <div class="panel-card" style="background: var(--surface-alt); margin: 18px 0; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="dbscanEps" style="font-size: 0.86rem; font-weight: 700;">Radius (&epsilon;):</label>
+          <select id="dbscanEps" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 0.86rem;">
+            <option value="0.4" {% if eps == 0.4 %}selected{% endif %}>0.4 (Tighter Clusters)</option>
+            <option value="0.6" {% if eps == 0.6 %}selected{% endif %}>0.6 (Standard Optimal)</option>
+            <option value="0.8" {% if eps == 0.8 %}selected{% endif %}>0.8 (Broader Cohorts)</option>
+            <option value="1.0" {% if eps == 1.0 %}selected{% endif %}>1.0 (Coarse Grouping)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="dbscanMinPts" style="font-size: 0.86rem; font-weight: 700;">Min Samples:</label>
+          <select id="dbscanMinPts" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 0.86rem;">
+            <option value="3" {% if min_samples == 3 %}selected{% endif %}>3 Students</option>
+            <option value="5" {% if min_samples == 5 %}selected{% endif %}>5 Students (Default)</option>
+            <option value="10" {% if min_samples == 10 %}selected{% endif %}>10 Students (Strict Density)</option>
+          </select>
+        </div>
+      </div>
+
+      <button onclick="runDBSCAN()" id="runDbscanBtn" class="btn-primary" style="padding: 10px 22px;">
+        ⚡ Run DBSCAN Density Clustering
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="dbscanLoading" style="display: none; text-align: center; padding: 50px 20px;">
+    <div class="pulse-dot" style="width: 16px; height: 16px; margin: 0 auto 14px; background: var(--danger);"></div>
+    <h3>Scanning Density Neighborhoods & Flagging Anomalies...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">Executing density-reachable boundary traversals...</p>
+  </div>
+
+  <!-- Placeholder State -->
+  <div id="dbscanPlaceholder" style="text-align: center; padding: 48px 20px; {% if dbscan_res %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">📍</div>
+    <h3>DBSCAN Density Engine Ready</h3>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 18px; font-size: 0.9rem;">
+      Select neighborhood radius &epsilon; and min samples above, then click <strong>"⚡ Run DBSCAN Density Clustering"</strong> to identify clusters and anomalies dynamically.
+    </p>
+    <button onclick="runDBSCAN()" class="btn-hero primary">▶️ Run DBSCAN Now</button>
+  </div>
+
+  <!-- Results Content Container -->
+  <div id="dbscanResults" {% if not dbscan_res %}style="display: none;"{% endif %}>
+    <div class="panel-grid" style="margin-top: 16px;">
+      <!-- 2D DBSCAN Scatter Plot -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>DBSCAN Density Clusters & Noise Points</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">High-density student cohorts shown as circles; noise/outliers shown as red crosses ($X$):</p>
+        <img id="dbscanPlotImg" src="{% if dbscan_res and dbscan_res.dbscan_plot %}data:image/png;base64,{{ dbscan_res.dbscan_plot }}{% endif %}" alt="DBSCAN Plot" class="responsive-img" />
+      </div>
+
+      <!-- Anomaly Comparison Breakdown -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>Anomaly / Noise Student Profile Analysis</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Comparing characteristic traits of isolated outlier students vs. mainstream cohorts:</p>
+        
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Engagement Feature</th>
+                <th>Normal Clustered Cohorts</th>
+                <th>Flagged Outliers (Noise)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Average Grade</strong></td>
+                <td class="text-success"><strong id="dbscanNormScore">{{ dbscan_res.anomaly_stats.normal_avg_score if dbscan_res else '--' }}%</strong></td>
+                <td class="text-danger"><strong id="dbscanNoiseScore">{{ dbscan_res.anomaly_stats.noise_avg_score if dbscan_res else '--' }}%</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Enrolled Credit Load</strong></td>
+                <td><span id="dbscanNormCredits">{{ dbscan_res.anomaly_stats.normal_avg_credits if dbscan_res else '--' }}</span> cr</td>
+                <td><strong class="text-warning"><span id="dbscanNoiseCredits">{{ dbscan_res.anomaly_stats.noise_avg_credits if dbscan_res else '--' }}</span> cr (High Deviation)</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Assessments Completed</strong></td>
+                <td><span id="dbscanNormAss">{{ dbscan_res.anomaly_stats.normal_avg_assessments if dbscan_res else '--' }}</span> submitted</td>
+                <td><strong class="text-danger"><span id="dbscanNoiseAss">{{ dbscan_res.anomaly_stats.noise_avg_assessments if dbscan_res else '--' }}</span> submitted</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert-box" style="margin-top: 14px;">
+          <strong>🚨 Early Warning Indicator:</strong> Students flagged as noise anomalies by DBSCAN exhibit extreme feature combinations (e.g. ultra-high credit load with 0 submitted coursework). These students require immediate 1-on-1 counselor outreach.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─────────────────────────────────────────────────────────────
+     TAB 4: PRINCIPAL COMPONENT ANALYSIS (PCA)
+     ───────────────────────────────────────────────────────────── -->
+{% if active_tab == 'pca' %}
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--info);">
+  <div class="model-header-row">
+    <div>
+      <span class="badge info">Linear Dimensionality Reduction</span>
+      <h2 style="margin-top: 6px;">Principal Component Analysis (PCA Scree & 2D Projection)</h2>
+      <p class="text-secondary">Linear orthogonal transformation finding axes of maximum variance across continuous student engagement signals.</p>
+    </div>
+    <div class="model-stats-box" id="pcaStatsBox" style="{% if not pca_res %}display: none;{% endif %}">
+      <div><span>Components Analyzed:</span> <strong id="pcaComponents">{{ pca_res.n_components if pca_res else '--' }}</strong></div>
+      <div><span>Cumulative Variance:</span> <strong class="text-primary" id="pcaCumulative">{{ pca_res.cumulative_variance if pca_res else '--' }}%</strong></div>
+    </div>
+  </div>
+
+  <!-- PCA Parameter & Run Bar -->
+  <div class="panel-card" style="background: var(--surface-alt); margin: 18px 0; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label for="pcaNComp" style="font-size: 0.86rem; font-weight: 700;">Components to Compute:</label>
+        <select id="pcaNComp" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 0.86rem;">
+          <option value="2">2 Components</option>
+          <option value="3">3 Components</option>
+          <option value="4" selected>4 Components (Standard)</option>
+          <option value="5">5 Components</option>
+        </select>
+      </div>
+      <button onclick="runPCA()" id="runPcaBtn" class="btn-primary" style="padding: 10px 22px;">
+        ⚡ Compute PCA Eigen Projections
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="pcaLoading" style="display: none; text-align: center; padding: 50px 20px;">
+    <div class="pulse-dot" style="width: 16px; height: 16px; margin: 0 auto 14px; background: var(--info);"></div>
+    <h3>Computing Covariance Matrix & Eigen Decomposition...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">Calculating orthogonal principal variance axes...</p>
+  </div>
+
+  <!-- Placeholder State -->
+  <div id="pcaPlaceholder" style="text-align: center; padding: 48px 20px; {% if pca_res %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">📐</div>
+    <h3>PCA Decomposition Ready</h3>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 18px; font-size: 0.9rem;">
+      Click <strong>"⚡ Compute PCA Eigen Projections"</strong> to calculate explained variance ratios and plot the 2D student outcome manifold.
+    </p>
+    <button onclick="runPCA()" class="btn-hero primary">▶️ Run PCA Now</button>
+  </div>
+
+  <!-- Results Content Container -->
+  <div id="pcaResults" {% if not pca_res %}style="display: none;"{% endif %}>
+    <div class="panel-grid" style="margin-top: 16px;">
+      <!-- Scree Variance Distribution -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>Variance Retained Per Component</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Explained variance ratios across the leading principal components:</p>
+        <div class="progress-list" id="pcaProgressList" style="margin-top: 16px;">
+          {% if pca_res %}
+            {% for var in pca_res.explained_variance %}
+            <div class="progress-item">
+              <div class="progress-label">
+                <span><strong>Principal Component {{ loop.index }} (PC{{ loop.index }})</strong></span>
+                <strong class="text-primary">{{ var }}% Variance</strong>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ var * 1.5 }}%"></div>
+              </div>
+            </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 2D PCA Outcome Map -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>PCA 2D Outcome Map</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Students projected along PC1 and PC2 (Blue = At-Risk / Dropout, Red = Pass / Distinction):</p>
+        <img id="pcaPlotImg" src="{% if pca_res and pca_res.pca_plot %}data:image/png;base64,{{ pca_res.pca_plot }}{% endif %}" alt="PCA Plot" class="responsive-img" />
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─────────────────────────────────────────────────────────────
+     TAB 5: t-SNE EMBEDDING
+     ───────────────────────────────────────────────────────────── -->
+{% if active_tab == 'tsne' %}
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--purple);">
+  <div class="model-header-row">
+    <div>
+      <span class="badge" style="background: var(--purple-light); color: var(--purple);">Non-Linear Manifold Learning</span>
+      <h2 style="margin-top: 6px;">t-SNE 2D Student Neighborhood Embedding</h2>
+      <p class="text-secondary">Non-linear technique converting Euclidean distances into conditional probabilities to model local student clusters with minimal crowding.</p>
+    </div>
+  </div>
+
+  <!-- t-SNE Parameter & Run Bar -->
+  <div class="panel-card" style="background: var(--surface-alt); margin: 18px 0; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="tsnePerp" style="font-size: 0.86rem; font-weight: 700;">Perplexity:</label>
+          <select id="tsnePerp" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 0.86rem;">
+            <option value="15">15 (Local Micro-clusters)</option>
+            <option value="30" selected>30 (Standard Balance)</option>
+            <option value="45">45 (Global Trends)</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="runTSNE()" id="runTsneBtn" class="btn-primary" style="padding: 10px 22px;">
+        ⚡ Run t-SNE Manifold Projection
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="tsneLoading" style="display: none; text-align: center; padding: 50px 20px;">
+    <div class="pulse-dot" style="width: 16px; height: 16px; margin: 0 auto 14px; background: var(--purple);"></div>
+    <h3>Computing t-SNE Probability Gradient Descent...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">Minimizing Kullback-Leibler divergence over high-dimensional student vectors...</p>
+  </div>
+
+  <!-- Placeholder State -->
+  <div id="tsnePlaceholder" style="text-align: center; padding: 48px 20px; {% if tsne_res %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">🌌</div>
+    <h3>t-SNE Manifold Ready</h3>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 18px; font-size: 0.9rem;">
+      Click <strong>"⚡ Run t-SNE Manifold Projection"</strong> to execute the iterative gradient embedding dynamically on the dataset.
+    </p>
+    <button onclick="runTSNE()" class="btn-hero primary">▶️ Run t-SNE Now</button>
+  </div>
+
+  <!-- Results Content Container -->
+  <div id="tsneResults" {% if not tsne_res %}style="display: none;"{% endif %}>
+    <div class="panel-grid" style="margin-top: 16px;">
+      <!-- t-SNE Plot -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>t-SNE 2D Manifold Space</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Student sub-populations grouped by mutual neighborhood similarity (Red = Pass, Blue = At-Risk):</p>
+        <img id="tsnePlotImg" src="{% if tsne_res and tsne_res.tsne_plot %}data:image/png;base64,{{ tsne_res.tsne_plot }}{% endif %}" alt="t-SNE Plot" class="responsive-img" />
+      </div>
+
+      <!-- Theoretical Mechanics Card -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>t-SNE Manifold Properties & Tuning</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">How t-SNE reveals complex student micro-cohorts:</p>
+        
+        <ul class="clean-list" style="margin-top: 12px; line-height: 1.7; font-size: 0.86rem;">
+          <li><strong>Local Neighborhood Preservation:</strong> Unlike linear PCA which preserves global variance, t-SNE ensures students with similar submission timelines and grades cluster together closely.</li>
+          <li><strong>Perplexity Parameter:</strong> Balances attention between local micro-clusters and broad global structure. Lower values emphasize tight local niches.</li>
+          <li><strong>Kullback-Leibler Divergence:</strong> Minimizes mismatch between high-dimensional Gaussian joint probabilities and low-dimensional Student-t distributions.</li>
+        </ul>
+
+        <div class="alert-box" style="margin-top: 14px;">
+          <strong>💡 Student Trajectory Observation:</strong> Notice the distinct separation between students who submit early coursework and those who register late with retakes.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ─────────────────────────────────────────────────────────────
+     TAB 6: UMAP MANIFOLD
+     ───────────────────────────────────────────────────────────── -->
+{% if active_tab == 'umap' %}
+<div class="panel-card" style="margin-bottom: 24px; border-left: 4px solid var(--success);">
+  <div class="model-header-row">
+    <div>
+      <span class="badge success">Topological Manifold Learning</span>
+      <h2 style="margin-top: 6px;">UMAP 2D Topological Manifold Projection</h2>
+      <p class="text-secondary">Riemannian geometry and algebraic topology embedding that preserves both local micro-clusters and global course completion continuum.</p>
+    </div>
+  </div>
+
+  <!-- UMAP Parameter & Run Bar -->
+  <div class="panel-card" style="background: var(--surface-alt); margin: 18px 0; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <label for="umapNeighbors" style="font-size: 0.86rem; font-weight: 700;">Neighbors (k):</label>
+          <select id="umapNeighbors" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 0.86rem;">
+            <option value="10">10 Neighbors (Local Micro-Detail)</option>
+            <option value="15" selected>15 Neighbors (Standard)</option>
+            <option value="30">30 Neighbors (Global Topology)</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="runUMAP()" id="runUmapBtn" class="btn-primary" style="padding: 10px 22px;">
+        ⚡ Compute UMAP Manifold
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="umapLoading" style="display: none; text-align: center; padding: 50px 20px;">
+    <div class="pulse-dot" style="width: 16px; height: 16px; margin: 0 auto 14px; background: var(--success);"></div>
+    <h3>Constructing Fuzzy Simplicial Set & Manifold Graph...</h3>
+    <p style="color: var(--text-secondary); font-size: 0.88rem;">Computing high-dimensional Riemannian metric projection...</p>
+  </div>
+
+  <!-- Placeholder State -->
+  <div id="umapPlaceholder" style="text-align: center; padding: 48px 20px; {% if umap_res %}display: none;{% endif %}">
+    <div style="font-size: 3rem; margin-bottom: 12px;">🗺️</div>
+    <h3>UMAP Topological Engine Ready</h3>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 18px; font-size: 0.9rem;">
+      Click <strong>"⚡ Compute UMAP Manifold"</strong> to construct the student learning continuum manifold dynamically.
+    </p>
+    <button onclick="runUMAP()" class="btn-hero primary">▶️ Run UMAP Now</button>
+  </div>
+
+  <!-- Results Content Container -->
+  <div id="umapResults" {% if not umap_res %}style="display: none;"{% endif %}>
+    <div class="panel-grid" style="margin-top: 16px;">
+      <!-- UMAP Plot -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>UMAP Student Trajectory Map</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Continuous student assessment grade spectrum mapped along the manifold continuum:</p>
+        <img id="umapPlotImg" src="{% if umap_res and umap_res.umap_plot %}data:image/png;base64,{{ umap_res.umap_plot }}{% endif %}" alt="UMAP Plot" class="responsive-img" />
+      </div>
+
+      <!-- Comparative Highlights -->
+      <div class="panel-card" style="background: var(--surface-alt);">
+        <h3>UMAP vs. t-SNE vs. PCA Comparison</h3>
+        <p style="font-size: 0.82rem; color: var(--text-secondary);">Why UMAP is widely favored for large-scale academic learning analytics:</p>
+        
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dimension Model</th>
+                <th>Global Continuity</th>
+                <th>Local Clustered Detail</th>
+                <th>Execution Speed</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>PCA</strong></td>
+                <td>High (Linear)</td>
+                <td>Low</td>
+                <td><span class="badge success">Ultra Fast</span></td>
+              </tr>
+              <tr>
+                <td><strong>t-SNE</strong></td>
+                <td>Moderate / Weak</td>
+                <td>Very High</td>
+                <td><span class="badge warning">Moderate</span></td>
+              </tr>
+              <tr class="row-highlight">
+                <td><strong>UMAP</strong></td>
+                <td><span class="badge success">Strong (Fuzzy Simplicial)</span></td>
+                <td><span class="badge success">Very High</span></td>
+                <td><span class="badge success">Fast O(N)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="alert-box" style="margin-top: 14px;">
+          <strong>🎯 Academic Insight:</strong> UMAP captures the full learning continuum from early enrollment to distinction grades as a continuous manifold curve rather than isolated disjointed islands.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  let activeKMeansK = {{ k }};
+  let activeHierarchicalK = {{ k }};
+  const activeModule = '{{ selected_module }}';
+
+  function setKMeansK(kVal) {
+    activeKMeansK = kVal;
+    document.querySelectorAll('#kmeansKBox .k-btn').forEach(btn => btn.classList.remove('active'));
+    const target = document.getElementById('btn-k-' + kVal);
+    if (target) target.classList.add('active');
+  }
+
+  function setHierarchicalK(kVal) {
+    activeHierarchicalK = kVal;
+    document.querySelectorAll('#hierarchicalKBox .k-btn').forEach(btn => btn.classList.remove('active'));
+    const target = document.getElementById('btn-hk-' + kVal);
+    if (target) target.classList.add('active');
+  }
+
+  // 1. K-Means
+  async function runKMeans() {
+    const btn = document.getElementById('runKmeansBtn');
+    const loadEl = document.getElementById('kmeansLoading');
+    const phEl = document.getElementById('kmeansPlaceholder');
+    const resEl = document.getElementById('kmeansResults');
+
+    phEl.style.display = 'none';
+    resEl.style.display = 'none';
+    loadEl.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/run-unsupervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm: 'kmeans', k: activeKMeansK, module: activeModule })
+      });
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        alert('K-Means execution failed: ' + data.message);
+        loadEl.style.display = 'none';
+        phEl.style.display = 'block';
+        return;
+      }
+      const r = data.result;
+      document.getElementById('kmeansPlotImg').src = 'data:image/png;base64,' + r.cluster_plot;
+
+      // Update table
+      const tbody = document.getElementById('kmeansTableBody');
+      tbody.innerHTML = '';
+      r.k_range.forEach((kv, idx) => {
+        const tr = document.createElement('tr');
+        if (kv === activeKMeansK) tr.className = 'row-highlight';
+        const sil = r.silhouette_scores[idx];
+        const qualBadge = sil >= 0.28 
+          ? '<span class="badge success">Optimal Separation</span>' 
+          : '<span class="badge warning">Moderate Separation</span>';
+        tr.innerHTML = `
+          <td><strong>k = ${kv}</strong></td>
+          <td>${Number(r.elbow_inertias[idx]).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td>
+          <td><strong>${sil}</strong></td>
+          <td>${qualBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Update personas
+      document.getElementById('kmeansPersonasHeader').innerText = `k = ${activeKMeansK}`;
+      const profContainer = document.getElementById('kmeansProfilesContainer');
+      profContainer.innerHTML = '';
+      r.profiles.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'persona-card';
+        card.innerHTML = `
+          <div class="persona-header">
+            <span class="persona-tag">Cluster #${p.cluster_id}</span>
+            <strong>${p.student_count} students (${p.pct_of_total}%)</strong>
+          </div>
+          <dl class="stat-list" style="margin-top: 10px;">
+            <div><dt>Avg Assessment Grade:</dt><dd><strong class="text-primary">${p.avg_score}%</strong></dd></div>
+            <div><dt>Submitted Assessments:</dt><dd>${p.avg_assessments}</dd></div>
+            <div><dt>Avg Credits Studied:</dt><dd>${p.avg_credits} cr</dd></div>
+            <div><dt>Prior Retakes:</dt><dd>${p.avg_attempts}</dd></div>
+          </dl>
+        `;
+        profContainer.appendChild(card);
+      });
+
+      loadEl.style.display = 'none';
+      resEl.style.display = 'block';
+    } catch (e) {
+      alert('Error running K-Means: ' + e.message);
+      loadEl.style.display = 'none';
+      phEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // 2. Hierarchical
+  async function runHierarchical() {
+    const btn = document.getElementById('runHierarchicalBtn');
+    const loadEl = document.getElementById('hierarchicalLoading');
+    const phEl = document.getElementById('hierarchicalPlaceholder');
+    const resEl = document.getElementById('hierarchicalResults');
+    const linkage = document.getElementById('hierarchicalLinkage').value;
+
+    phEl.style.display = 'none';
+    resEl.style.display = 'none';
+    loadEl.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/run-unsupervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm: 'hierarchical', k: activeHierarchicalK, linkage: linkage, module: activeModule })
+      });
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        alert('Hierarchical execution failed: ' + data.message);
+        loadEl.style.display = 'none';
+        phEl.style.display = 'block';
+        return;
+      }
+      const r = data.result;
+      if (r.dendrogram_plot) {
+        document.getElementById('hierarchicalDendroImg').src = 'data:image/png;base64,' + r.dendrogram_plot;
+      }
+      document.getElementById('hierarchicalPlotImg').src = 'data:image/png;base64,' + r.cluster_plot;
+      document.getElementById('hierarchicalSil').innerText = r.silhouette_score;
+
+      const profContainer = document.getElementById('hierarchicalProfilesContainer');
+      profContainer.innerHTML = '';
+      r.profiles.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'persona-card';
+        card.innerHTML = `
+          <div class="persona-header">
+            <span class="persona-tag" style="background: var(--accent-light); color: var(--accent);">Branch #${p.cluster_id}</span>
+            <strong>${p.student_count} students (${p.pct_of_total}%)</strong>
+          </div>
+          <dl class="stat-list" style="margin-top: 10px;">
+            <div><dt>Avg Assessment Grade:</dt><dd><strong class="text-accent">${p.avg_score}%</strong></dd></div>
+            <div><dt>Submitted Assessments:</dt><dd>${p.avg_assessments}</dd></div>
+            <div><dt>Avg Credits Studied:</dt><dd>${p.avg_credits} cr</dd></div>
+            <div><dt>Prior Retakes:</dt><dd>${p.avg_attempts}</dd></div>
+          </dl>
+        `;
+        profContainer.appendChild(card);
+      });
+
+      loadEl.style.display = 'none';
+      resEl.style.display = 'block';
+    } catch (e) {
+      alert('Error running Hierarchical clustering: ' + e.message);
+      loadEl.style.display = 'none';
+      phEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // 3. DBSCAN
+  async function runDBSCAN() {
+    const btn = document.getElementById('runDbscanBtn');
+    const loadEl = document.getElementById('dbscanLoading');
+    const phEl = document.getElementById('dbscanPlaceholder');
+    const resEl = document.getElementById('dbscanResults');
+    const eps = parseFloat(document.getElementById('dbscanEps').value);
+    const minPts = parseInt(document.getElementById('dbscanMinPts').value);
+
+    phEl.style.display = 'none';
+    resEl.style.display = 'none';
+    loadEl.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/run-unsupervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm: 'dbscan', eps: eps, min_samples: minPts, module: activeModule })
+      });
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        alert('DBSCAN execution failed: ' + data.message);
+        loadEl.style.display = 'none';
+        phEl.style.display = 'block';
+        return;
+      }
+      const r = data.result;
+      document.getElementById('dbscanStatsBox').style.display = 'flex';
+      document.getElementById('dbscanClusters').innerText = r.n_clusters;
+      document.getElementById('dbscanNoise').innerText = `${r.n_noise} (${r.noise_pct}%)`;
+      document.getElementById('dbscanPlotImg').src = 'data:image/png;base64,' + r.dbscan_plot;
+
+      document.getElementById('dbscanNormScore').innerText = r.anomaly_stats.normal_avg_score + '%';
+      document.getElementById('dbscanNoiseScore').innerText = r.anomaly_stats.noise_avg_score + '%';
+      document.getElementById('dbscanNormCredits').innerText = r.anomaly_stats.normal_avg_credits;
+      document.getElementById('dbscanNoiseCredits').innerText = r.anomaly_stats.noise_avg_credits;
+      document.getElementById('dbscanNormAss').innerText = r.anomaly_stats.normal_avg_assessments;
+      document.getElementById('dbscanNoiseAss').innerText = r.anomaly_stats.noise_avg_assessments;
+
+      loadEl.style.display = 'none';
+      resEl.style.display = 'block';
+    } catch (e) {
+      alert('Error running DBSCAN: ' + e.message);
+      loadEl.style.display = 'none';
+      phEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // 4. PCA
+  async function runPCA() {
+    const btn = document.getElementById('runPcaBtn');
+    const loadEl = document.getElementById('pcaLoading');
+    const phEl = document.getElementById('pcaPlaceholder');
+    const resEl = document.getElementById('pcaResults');
+    const nComp = parseInt(document.getElementById('pcaNComp').value);
+
+    phEl.style.display = 'none';
+    resEl.style.display = 'none';
+    loadEl.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/run-unsupervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm: 'pca', n_components: nComp, module: activeModule })
+      });
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        alert('PCA execution failed: ' + data.message);
+        loadEl.style.display = 'none';
+        phEl.style.display = 'block';
+        return;
+      }
+      const r = data.result;
+      document.getElementById('pcaStatsBox').style.display = 'flex';
+      document.getElementById('pcaComponents').innerText = r.n_components;
+      document.getElementById('pcaCumulative').innerText = r.cumulative_variance + '%';
+      document.getElementById('pcaPlotImg').src = 'data:image/png;base64,' + r.pca_plot;
+
+      const pList = document.getElementById('pcaProgressList');
+      pList.innerHTML = '';
+      r.explained_variance.forEach((ev, idx) => {
+        const item = document.createElement('div');
+        item.className = 'progress-item';
+        item.innerHTML = `
+          <div class="progress-label">
+            <span><strong>Principal Component ${idx + 1} (PC${idx + 1})</strong></span>
+            <strong class="text-primary">${ev}% Variance</strong>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${ev * 1.5}%"></div>
+          </div>
+        `;
+        pList.appendChild(item);
+      });
+
+      loadEl.style.display = 'none';
+      resEl.style.display = 'block';
+    } catch (e) {
+      alert('Error running PCA: ' + e.message);
+      loadEl.style.display = 'none';
+      phEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // 5. t-SNE
+  async function runTSNE() {
+    const btn = document.getElementById('runTsneBtn');
+    const loadEl = document.getElementById('tsneLoading');
+    const phEl = document.getElementById('tsnePlaceholder');
+    const resEl = document.getElementById('tsneResults');
+    const perp = parseInt(document.getElementById('tsnePerp').value);
+
+    phEl.style.display = 'none';
+    resEl.style.display = 'none';
+    loadEl.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/run-unsupervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm: 'tsne', perplexity: perp, n_iter: 500, module: activeModule })
+      });
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        alert('t-SNE execution failed: ' + data.message);
+        loadEl.style.display = 'none';
+        phEl.style.display = 'block';
+        return;
+      }
+      const r = data.result;
+      document.getElementById('tsnePlotImg').src = 'data:image/png;base64,' + r.tsne_plot;
+      loadEl.style.display = 'none';
+      resEl.style.display = 'block';
+    } catch (e) {
+      alert('Error running t-SNE: ' + e.message);
+      loadEl.style.display = 'none';
+      phEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // 6. UMAP
+  async function runUMAP() {
+    const btn = document.getElementById('runUmapBtn');
+    const loadEl = document.getElementById('umapLoading');
+    const phEl = document.getElementById('umapPlaceholder');
+    const resEl = document.getElementById('umapResults');
+    const nNeigh = parseInt(document.getElementById('umapNeighbors').value);
+
+    phEl.style.display = 'none';
+    resEl.style.display = 'none';
+    loadEl.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const resp = await fetch('/api/run-unsupervised', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm: 'umap', n_neighbors: nNeigh, min_dist: 0.1, module: activeModule })
+      });
+      const data = await resp.json();
+      if (data.status !== 'success') {
+        alert('UMAP execution failed: ' + data.message);
+        loadEl.style.display = 'none';
+        phEl.style.display = 'block';
+        return;
+      }
+      const r = data.result;
+      document.getElementById('umapPlotImg').src = 'data:image/png;base64,' + r.umap_plot;
+      loadEl.style.display = 'none';
+      resEl.style.display = 'block';
+    } catch (e) {
+      alert('Error running UMAP: ' + e.message);
+      loadEl.style.display = 'none';
+      phEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+{% endblock %}

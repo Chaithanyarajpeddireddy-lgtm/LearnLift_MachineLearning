@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}Cohort Roster Analyzer — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Batch Student Risk Evaluation{% endblock %}
+{% block page_title %}Cohort Roster Academic Risk Analyzer{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">👥 Batch Student Intelligence</div>
+    <h2>Cohort-Wide Performance & Early Retention Screening</h2>
+    <p>
+      Evaluate entire classrooms and student rosters in a single batch pass. Our ensemble pipelines classify every student into risk tiers to facilitate proactive academic support and advisor outreach.
+    </p>
+  </div>
+  <div class="hero-actions">
+    <button class="btn-hero primary" onclick="runBatchPrediction()">
+      ⚡ Evaluate Cohort AI
+    </button>
+  </div>
+</div>
+
+<!-- Cohort Summary Stats -->
+<div class="metric-grid" id="cohortSummaryGrid">
+  <div class="metric-card">
+    <span class="metric-label">Total Roster Students</span>
+    <strong class="metric-value" id="kpiTotal">12</strong>
+    <span class="metric-sub">Active in Current Cohort</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-label">Low Risk / Dean's List</span>
+    <strong class="metric-value text-success" id="kpiLowRisk">--</strong>
+    <span class="metric-sub">>75% Predicted Pass Rate</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-label">Moderate Risk (Passing)</span>
+    <strong class="metric-value text-warning" id="kpiModRisk">--</strong>
+    <span class="metric-sub">50% - 75% Pass Rate</span>
+  </div>
+
+  <div class="metric-card">
+    <span class="metric-label">Urgent Intervention Risk</span>
+    <strong class="metric-value text-danger" id="kpiHighRisk">--</strong>
+    <span class="metric-sub">&lt;50% Pass Rate (Action Req.)</span>
+  </div>
+</div>
+
+<!-- Main Table Panel -->
+<div class="panel-card" style="margin-bottom: 24px;">
+  <div class="model-header-row">
+    <div>
+      <h3>Student Cohort Roster</h3>
+      <p class="text-secondary" style="font-size: 0.84rem;">
+        Click any filter to isolate specific risk cohorts or export the report for academic advisors.
+      </p>
+    </div>
+    <div class="cohort-actions">
+      <!-- Filter Chips -->
+      <div class="filter-group">
+        <button class="filter-btn active" onclick="filterTier('all', this)">All (12)</button>
+        <button class="filter-btn" onclick="filterTier('Low Risk', this)">Dean's List / Pass</button>
+        <button class="filter-btn" onclick="filterTier('Moderate Risk', this)">Moderate</button>
+        <button class="filter-btn" onclick="filterTier('High Risk', this)">Urgent Intervention</button>
+      </div>
+
+      <button class="btn-hero secondary" style="color: var(--text-primary); border-color: var(--border);" onclick="exportTableToCSV()">
+        📥 Export CSV
+      </button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table" id="rosterTable">
+      <thead>
+        <tr>
+          <th>Student ID</th>
+          <th>Module</th>
+          <th>Prior Education</th>
+          <th>Credits</th>
+          <th>Assessments Done</th>
+          <th>Expected Grade</th>
+          <th>Pass Probability</th>
+          <th>Academic Risk Tier</th>
+        </tr>
+      </thead>
+      <tbody id="rosterTbody">
+        {% for s in sample_records %}
+        <tr data-student-id="{{ s.id_student }}" 
+            data-module="{{ s.code_module }}" 
+            data-edu="{{ s.highest_education }}"
+            data-credits="{{ s.studied_credits }}"
+            data-submitted="{{ s.assessments_submitted }}">
+          <td><strong>#{{ s.id_student }}</strong></td>
+          <td><span class="badge-sample">{{ s.code_module }}</span></td>
+          <td>{{ s.highest_education }}</td>
+          <td>{{ s.studied_credits }} cr</td>
+          <td>{{ s.assessments_submitted }}</td>
+          <td class="col-grade">Calculating...</td>
+          <td class="col-prob">--%</td>
+          <td class="col-tier"><span class="badge primary">Evaluating...</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Quick Add Student to Cohort Form -->
+<div class="panel-card">
+  <h3>Add Student to Live Evaluation Roster</h3>
+  <p class="text-secondary" style="font-size: 0.84rem; margin-bottom: 14px;">
+    Quickly append a new student profile to the cohort table for immediate batch inference:
+  </p>
+
+  <form id="addStudentForm" class="form-row" onsubmit="addStudent(event)">
+    <div class="form-group">
+      <label for="new_id">Student ID</label>
+      <input type="text" id="new_id" value="STD-{{ range(2000, 9999)|random }}" required />
+    </div>
+
+    <div class="form-group">
+      <label for="new_module">Module</label>
+      <select id="new_module">
+        <option value="BBB" selected>BBB</option>
+        <option value="AAA">AAA</option>
+        <option value="CCC">CCC</option>
+        <option value="DDD">DDD</option>
+        <option value="FFF">FFF</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="new_edu">Education</label>
+      <select id="new_edu">
+        <option value="A Level or Equivalent" selected>A Level</option>
+        <option value="HE Qualification">HE Qual</option>
+        <option value="Lower Than A Level">Lower Than A Level</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="new_credits">Credits</label>
+      <input type="number" id="new_credits" value="60" min="30" max="240" step="30" required />
+    </div>
+
+    <div class="form-group">
+      <label for="new_submitted">Assessments</label>
+      <input type="number" id="new_submitted" value="4" min="0" max="12" required />
+    </div>
+
+    <div class="form-group" style="justify-content: flex-end;">
+      <button type="submit" class="btn-primary" style="height: 42px;">
+        ➕ Append to Cohort
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  let cachedBatchResults = [];
+
+  async function runBatchPrediction() {
+    const rows = document.querySelectorAll('#rosterTbody tr');
+    const students = [];
+
+    rows.forEach(r => {
+      students.push({
+        id_student: r.getAttribute('data-student-id'),
+        code_module: r.getAttribute('data-module'),
+        highest_education: r.getAttribute('data-edu'),
+        studied_credits: parseFloat(r.getAttribute('data-credits') || 60),
+        assessments_submitted: parseFloat(r.getAttribute('data-submitted') || 4),
+        imd_band: '50-60%',
+        age_band: '0-35',
+        gender: 'M',
+        disability: 'N',
+        num_of_prev_attempts: 0,
+        registration_lead_time: 30,
+      });
+    });
+
+    try {
+      const res = await fetch('/api/batch-predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ students: students, module: '{{ selected_module }}' })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        cachedBatchResults = data.results;
+        renderBatchTable(data.results);
+      }
+    } catch (err) {
+      console.error('Batch evaluation error:', err);
+    }
+  }
+
+  function renderBatchTable(results) {
+    const rows = document.querySelectorAll('#rosterTbody tr');
+    let lowCount = 0, modCount = 0, highCount = 0;
+
+    results.forEach((res, idx) => {
+      if (idx < rows.length) {
+        const r = rows[idx];
+        r.querySelector('.col-grade').innerHTML = '<strong>' + res.predicted_grade + '</strong>';
+        r.querySelector('.col-prob').innerText = res.pass_prob;
+        r.querySelector('.col-tier').innerHTML = '<span class="badge ' + res.badge + '">' + res.tier + '</span>';
+        r.setAttribute('data-tier', res.tier);
+
+        if (res.tier.includes('Low Risk')) lowCount++;
+        else if (res.tier.includes('Moderate Risk')) modCount++;
+        else highCount++;
+      }
+    });
+
+    document.getElementById('kpiTotal').innerText = results.length;
+    document.getElementById('kpiLowRisk').innerText = lowCount + ` (${Math.round(lowCount/results.length*100)}%)`;
+    document.getElementById('kpiModRisk').innerText = modCount + ` (${Math.round(modCount/results.length*100)}%)`;
+    document.getElementById('kpiHighRisk').innerText = highCount + ` (${Math.round(highCount/results.length*100)}%)`;
+  }
+
+  function filterTier(tierFilter, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const rows = document.querySelectorAll('#rosterTbody tr');
+    rows.forEach(r => {
+      const tier = r.getAttribute('data-tier') || '';
+      if (tierFilter === 'all' || tier.toLowerCase().includes(tierFilter.toLowerCase())) {
+        r.style.display = '';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  function addStudent(e) {
+    e.preventDefault();
+    const id = document.getElementById('new_id').value;
+    const mod = document.getElementById('new_module').value;
+    const edu = document.getElementById('new_edu').value;
+    const cred = document.getElementById('new_credits').value;
+    const sub = document.getElementById('new_submitted').value;
+
+    const tbody = document.getElementById('rosterTbody');
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-student-id', id);
+    tr.setAttribute('data-module', mod);
+    tr.setAttribute('data-edu', edu);
+    tr.setAttribute('data-credits', cred);
+    tr.setAttribute('data-submitted', sub);
+
+    tr.innerHTML = `
+      <td><strong>#${id}</strong></td>
+      <td><span class="badge-sample">${mod}</span></td>
+      <td>${edu}</td>
+      <td>${cred} cr</td>
+      <td>${sub}</td>
+      <td class="col-grade">Evaluating...</td>
+      <td class="col-prob">--%</td>
+      <td class="col-tier"><span class="badge primary">Pending</span></td>
+    `;
+    tbody.appendChild(tr);
+
+    // Reset random ID
+    document.getElementById('new_id').value = 'STD-' + Math.floor(1000 + Math.random() * 9000);
+    runBatchPrediction();
+  }
+
+  function exportTableToCSV() {
+    let csv = 'Student ID,Module,Education,Credits,Submitted,Predicted Grade,Pass Probability,Risk Tier\n';
+    cachedBatchResults.forEach(r => {
+      csv += `${r.student_id},${r.module},"${r.education}",${r.credits},${r.submitted},${r.predicted_grade},${r.pass_prob},"${r.tier}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'OULAD_Cohort_Risk_Evaluation.csv';
+    a.click();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    runBatchPrediction();
+  });
+</script>
+{% endblock %}

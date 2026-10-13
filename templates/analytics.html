@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Analytics — LearnLift OULAD{% endblock %}
+{% block page_kicker %}Performance Leaderboards & Benchmarks{% endblock %}
+{% block page_title %}Comparative Model Analytics (24 Supervised Models){% endblock %}
+
+{% block content %}
+<!-- Paradigm Banner -->
+<div class="hero-card" style="margin-bottom: 24px;">
+  <div class="hero-text">
+    <div class="hero-badge">🔬 Comprehensive Model Benchmark</div>
+    <h2>Unified Performance Leaderboards (24 Algorithms)</h2>
+    <p>
+      Cross-algorithm comparison benchmarking 12 Classification models (predicting Course Pass / Dropout) and 12 Regression models (predicting Continuous Assessment Scores) trained on identical OULAD splits.
+    </p>
+  </div>
+  <div class="hero-actions">
+    <a href="/playground{% if selected_module != 'ALL' %}?module={{ selected_module }}{% endif %}" class="btn-hero primary">
+      🎛️ Tune Hyperparameters →
+    </a>
+  </div>
+</div>
+
+<!-- 1. Classification Leaderboard -->
+<div class="panel-card" style="margin-bottom: 28px;">
+  <div class="card-header-badge">
+    <span class="badge primary">Classification Suite (12 Models)</span>
+    <h3 style="margin-top: 6px;">Student Retention & Dropout Classification Leaderboard</h3>
+  </div>
+  <p class="text-secondary" style="margin-bottom: 16px;">
+    Sorted by evaluation metrics on hold-out validation test split (20%). Click any algorithm to inspect its confusion matrix and decision rules:
+  </p>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Algorithm</th>
+          <th>Type</th>
+          <th>Accuracy (%)</th>
+          <th>Precision (%)</th>
+          <th>Recall (%)</th>
+          <th>F1-Score (%)</th>
+          <th>Specificity (%)</th>
+          <th>AUC-ROC (%)</th>
+          <th>Fit Time (ms)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in cls_summary %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <a href="/supervised?type=classification&model={{ m.key }}{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" style="text-decoration: none; color: var(--primary);">
+              <strong>{{ m.name }}</strong>
+            </a>
+          </td>
+          <td><span class="badge-sample">{{ m.type }}</span></td>
+          <td><span class="badge accuracy-badge">{{ m.acc }}%</span></td>
+          <td>{{ m.prec }}%</td>
+          <td>{{ m.rec }}%</td>
+          <td><strong>{{ m.f1 }}%</strong></td>
+          <td>{{ m.spec }}%</td>
+          <td><span class="badge score-badge">{{ m.auc }}%</span></td>
+          <td>{{ m.fit_time_ms }} ms</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 2. Regression Leaderboard -->
+<div class="panel-card">
+  <div class="card-header-badge">
+    <span class="badge accent">Regression Suite (12 Models)</span>
+    <h3 style="margin-top: 6px;">Continuous Assessment Grade Prediction Leaderboard</h3>
+  </div>
+  <p class="text-secondary" style="margin-bottom: 16px;">
+    Evaluating continuous grade estimation accuracy on hold-out test set. Click any algorithm to inspect top feature impact coefficients:
+  </p>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Regression Algorithm</th>
+          <th>Type</th>
+          <th>R² Score</th>
+          <th>MSE</th>
+          <th>RMSE (% Grade)</th>
+          <th>MAE (% Grade)</th>
+          <th>Fit Time (ms)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in reg_summary %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <a href="/supervised?type=regression&model={{ m.key }}{% if selected_module != 'ALL' %}&module={{ selected_module }}{% endif %}" style="text-decoration: none; color: var(--primary);">
+              <strong>{{ m.name }}</strong>
+            </a>
+          </td>
+          <td><span class="badge-sample">{{ m.type }}</span></td>
+          <td><span class="badge score-badge">{{ m.r2 }}</span></td>
+          <td>{{ m.mse }}</td>
+          <td><strong class="text-warning">{{ m.rmse }}%</strong></td>
+          <td><strong class="text-success">{{ m.mae }}%</strong></td>
+          <td>{{ m.fit_time_ms }} ms</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
